@@ -1,0 +1,49 @@
+require:
+  - rubocop-rails
+  - rubocop-performance
+
+AllCops:
+  NewCops: enable
+  TargetRubyVersion: 3.3
+  Exclude:
+    - "db/schema.rb"
+    - "db/migrate/**/*"
+    - "bin/**/*"
+    - "node_modules/**/*"
+    - "vendor/**/*"
+
+# ── Layout ────────────────────────────────────────────────────────────────────
+Layout/LineLength:
+  Max: 120
+  AllowedPatterns:
+    - "^\\s*#"  # comments
+
+# ── Style ─────────────────────────────────────────────────────────────────────
+Style/Documentation:
+  Enabled: false
+
+Style/FrozenStringLiteralComment:
+  Enabled: true
+  EnforcedStyle: always
+
+Style/StringLiterals:
+  EnforcedStyle: double_quotes
+
+# ── Metrics ───────────────────────────────────────────────────────────────────
+Metrics/MethodLength:
+  Max: 20
+
+Metrics/BlockLength:
+  AllowedMethods:
+    - describe
+    - context
+    - it
+    - let
+    - before
+    - after
+    - routes.draw
+    - configure
+
+# ── Rails ─────────────────────────────────────────────────────────────────────
+Rails/Output:
+  Enabled: true

@@ -1,0 +1,55 @@
+{
+  "name": "elearn-ngx Rails + Vite + React Islands",
+  "build": {
+    "dockerfile": "Dockerfile",
+    "context": ".."
+  },
+  "features": {
+    "ghcr.io/devcontainers/features/postgres:1": {
+      "version": "16"
+    }
+  },
+  "forwardPorts": [3000, 3036],
+  "portsAttributes": {
+    "3000": {
+      "label": "Rails Server",
+      "onAutoForward": "notify"
+    },
+    "3036": {
+      "label": "Vite Dev Server",
+      "onAutoForward": "silent"
+    }
+  },
+  "postCreateCommand": "bundle install && yarn install",
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "Shopify.ruby-lsp",
+        "Koenigsegg.raketasks",
+        "bradlc.vscode-tailwindcss",
+        "dbaeumer.vscode-eslint",
+        "ms-vscode.vscode-typescript-next",
+        "esbenp.prettier-vscode",
+        "formulahendry.auto-rename-tag",
+        "mikestead.dotenv",
+        "ms-vsliveshare.vsliveshare",
+        "GitHub.vscode-pull-request-github"
+      ],
+      "settings": {
+        "editor.formatOnSave": true,
+        "editor.defaultFormatter": "esbenp.prettier-vscode",
+        "[ruby]": {
+          "editor.defaultFormatter": "Shopify.ruby-lsp"
+        },
+        "ruby.lsp.enabled": true,
+        "files.associations": {
+          "*.html.erb": "erb"
+        }
+      }
+    }
+  },
+  "remoteEnv": {
+    "RAILS_ENV": "development",
+    "NODE_ENV": "development"
+  }
+}
