@@ -1,0 +1,39 @@
+# Ruby / Rails
+/.bundle
+/vendor/bundle
+/log/*
+!/log/.keep
+/tmp/*
+!/tmp/.keep
+/storage/*
+!/storage/.keep
+/public/assets
+/public/vite*
+
+# Vite / Node
+node_modules/
+/dist
+/.vite
+yarn-error.log
+npm-debug.log*
+
+# Database
+*.sqlite3
+*.sqlite3-journal
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/settings.json
+.idea/
+
+# Environment
+.env
+.env.*
+!.env.example
+
+# Credentials
+config/master.key
+config/credentials.yml.enc

@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <meta name="turbo-cache-control" content="no-preview">
+
+    <%# CSRF token – readable by client-side fetch modules via:
+        document.querySelector('meta[name="csrf-token"]')?.content %>
+    <meta name="csrf-token" content="<%= form_authenticity_token %>">
+
+    <title><%= content_for?(:title) ? yield(:title) : "ElearnNgx" %></title>
+    <meta name="description" content="<%= content_for?(:description) ? yield(:description) : "elearn-ngx" %>">
+
+    <%# Vite entrypoints ────────────────────────────────────────────────── %>
+    <%= vite_client_tag %>
+    <%= vite_javascript_tag "application", defer: true %>
+    <%= vite_javascript_tag "web_components", defer: true %>
+    <%= vite_stylesheet_tag "application", media: "all" if ViteRails.instance.manifest.path_for("application.css") rescue nil %>
+
+    <%= yield :head %>
+  </head>
+
+  <body class="<%= content_for?(:body_class) ? yield(:body_class) : "" %>">
+    <%# Flash messages %>
+    <% flash.each do |type, message| %>
+      <div class="flash flash--<%= type %>" role="alert"><%= message %></div>
+    <% end %>
+
+    <%= yield %>
+  </body>
+</html>

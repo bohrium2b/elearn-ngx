@@ -1,0 +1,38 @@
+{
+  "compilerOptions": {
+    /* ── Project basics ──────────────────────────────────────────────────── */
+    "target": "ES2020",
+    "lib": ["ES2020", "DOM", "DOM.Iterable"],
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+
+    /* ── Strictness ──────────────────────────────────────────────────────── */
+    "strict": true,
+    "noUncheckedIndexedAccess": true,
+    "exactOptionalPropertyTypes": true,
+    "noImplicitOverride": true,
+    "noPropertyAccessFromIndexSignature": true,
+
+    /* ── JSX ─────────────────────────────────────────────────────────────── */
+    "jsx": "react-jsx",
+
+    /* ── Interop ─────────────────────────────────────────────────────────── */
+    "esModuleInterop": true,
+    "allowSyntheticDefaultImports": true,
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
+
+    /* ── Output – Vite handles the actual emit ────────────────────────────── */
+    "noEmit": true,
+
+    /* ── Paths (mirrors vite.config.ts alias) ────────────────────────────── */
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["app/frontend/*"]
+    }
+  },
+  "include": ["app/frontend/**/*.ts", "app/frontend/**/*.tsx", "vite.config.ts"],
+  "exclude": ["node_modules", "public"]
+}
