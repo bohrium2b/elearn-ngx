@@ -7,4 +7,7 @@ Rails.application.routes.draw do
 
   # Root route – update this when you add a HomeController
   # root "home#index"
+
+  root "questions#index"
+  resources :questions
 end

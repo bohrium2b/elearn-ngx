@@ -6,6 +6,10 @@ Rails.application.configure do
   config.eager_load = false
   config.consider_all_requests_local = true
 
+  # ── Assets ────────────────────────────────────────────────────────────────
+  config.assets.debug = true
+  config.assets.quiet = true
+
   # ── Server ────────────────────────────────────────────────────────────────
   config.server_timing = true
 
@@ -29,10 +33,6 @@ Rails.application.configure do
   config.log_tags = [:request_id]
   config.logger = ActiveSupport::TaggedLogging.new(Logger.new(STDOUT))
 
-  # ── Assets ────────────────────────────────────────────────────────────────
-  config.assets.debug = true
-  config.assets.quiet = true
-
   # ── Raise errors for missing translations ─────────────────────────────────
   config.i18n.raise_on_missing_translations = true
 
@@ -41,4 +41,14 @@ Rails.application.configure do
 
   # ── Raise error on unpermitted parameters ─────────────────────────────────
   config.action_controller.raise_on_missing_callback_actions = true
+
+  # -- HOSTS -──────────────────────────────────────────────────────────────
+  config.hosts << "curly-memory-pqr65q7xgjwc7jv7-3000.app.github.dev"
+  # Allow origin mismatch for local development behind the Codespaces/GitHub proxy
+  # and permit the forwarded app.github.dev host for Action Cable connections.
+  config.action_controller.forgery_protection_origin_check = false
+  config.action_cable.allowed_request_origins = [
+    "http://localhost:3000",
+    %r{\Ahttps://.*\.app.github.dev(:\d+)?\z}
+  ]
 end
