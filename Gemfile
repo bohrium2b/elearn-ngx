@@ -4,17 +4,18 @@ git_source(:github) { |repo| "https://github.com/#{repo}.git" }
 ruby "~> 3.3"
 
 # ── Core ──────────────────────────────────────────────────────────────────────
-gem "rails", "~> 7.2"
 gem "pg", "~> 1.5"
 gem "puma", "~> 6.4"
+gem "rails", "~> 7.2"
+gem "sprockets-rails"
 
 # ── Frontend pipeline (Vite + React) ──────────────────────────────────────────
 gem "vite_rails", "~> 3.0"
 
 # ── Application features ──────────────────────────────────────────────────────
-gem "turbo-rails"
-gem "stimulus-rails"
 gem "jbuilder"
+gem "stimulus-rails"
+gem "turbo-rails"
 
 # ── Redis (for Action Cable / caching) ────────────────────────────────────────
 # gem "redis", ">= 4.0.1"
@@ -34,10 +35,12 @@ group :development, :test do
 end
 
 group :development do
-  gem "web-console"
+  gem "dotenv-rails", require: false
   gem "rubocop", require: false
-  gem "rubocop-rails", require: false
   gem "rubocop-performance", require: false
+  gem "rubocop-rails", require: false
+  gem "ruby-lsp", require: false
+  gem "web-console"
 end
 
 group :test do
