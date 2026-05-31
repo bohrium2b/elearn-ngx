@@ -20,6 +20,15 @@ RUN apt-get update && apt-get install -y \
     imagemagick \
     && rm -rf /var/lib/apt/lists/*
 
+# Install Postgres server
+RUN apt-get update && apt-get install -y postgresql postgresql-contrib postgresql-client
+# Start Postgres service and create user/database
+RUN service postgresql start && \
+    su - postgres -c "psql -c \"CREATE ROLE dev WITH LOGIN PASSWORD 'dev';\"" && \
+    su - postgres -c "psql -c \"ALTER ROLE dev CREATEDB;\"" && \
+    su - postgres -c "psql -c \"CREATE DATABASE elearn_dev OWNER dev;\"" && \
+    su - postgres -c "psql -c \"CREATE DATABASE elearn_test OWNER dev;\""
+    
 # ── Ruby 3.3 via rbenv ────────────────────────────────────────────────────────
 ENV RUBY_VERSION=3.3.3
 ENV RBENV_ROOT=/usr/local/rbenv
@@ -31,6 +40,12 @@ RUN git clone https://github.com/rbenv/rbenv.git $RBENV_ROOT && \
     rbenv global $RUBY_VERSION && \
     gem update --system && \
     gem install bundler
+
+# Install ruby-lsp
+RUN gem install ruby-lsp
+
+# Grant write permissions to the gem installation directory for the dev user
+RUN chmod -R 755 $RBENV_ROOT
 
 # ── Node.js 20 via nvm ────────────────────────────────────────────────────────
 ENV NODE_VERSION=20

@@ -4,11 +4,7 @@
     "dockerfile": "Dockerfile",
     "context": ".."
   },
-  "features": {
-    "ghcr.io/devcontainers/features/postgres:1": {
-      "version": "16"
-    }
-  },
+  "features": {},
   "forwardPorts": [3000, 3036],
   "portsAttributes": {
     "3000": {
