@@ -14,8 +14,8 @@
 
     <%# Vite entrypoints ────────────────────────────────────────────────── %>
     <%= vite_client_tag %>
-    <%= vite_javascript_tag "application", defer: true %>
-    <%= vite_javascript_tag "web_components", defer: true %>
+    <%= vite_javascript_tag "application.ts", defer: true %>
+    <%= vite_javascript_tag "web_components.ts", defer: true %>
     <%= vite_stylesheet_tag "application", media: "all" if ViteRails.instance.manifest.path_for("application.css") rescue nil %>
 
     <%= yield :head %>
@@ -24,7 +24,7 @@
   <body class="<%= content_for?(:body_class) ? yield(:body_class) : "" %>">
     <%# Flash messages %>
     <% flash.each do |type, message| %>
-      <div class="flash flash--<%= type %>" role="alert"><%= message %></div>
+      <div class="alert alert-<%= type %>" role="alert"><%= message %></div>
     <% end %>
 
     <%= yield %>
