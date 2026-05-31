@@ -19,3 +19,19 @@ const controllers = import.meta.glob<{ default: unknown }>(
   { eager: true },
 );
 registerControllers(stimulusApp, controllers);
+
+// ── Global CSS (optional) ───────────────────────────────────────────────────────
+import "bootstrap/dist/css/bootstrap.min.css";
+// import "@/styles/application.css";
+
+// Polyfill for libraries that expect `jQuery.event.props` to exist (Perseus
+// and some jQuery-mobile helpers assume this array). Newer jQuery versions
+// (v4+) removed this internal property which can cause `undefined.concat` errors.
+import $ from "jquery";
+if (!$.event) {
+  // Ensure the event object exists
+  // @ts-expect-error - adding a non-standard property for compatibility
+  $.event = {} as any;
+}
+// @ts-expect-error - jQuery internal API compatibility shim
+$.event.props = $.event.props || [];

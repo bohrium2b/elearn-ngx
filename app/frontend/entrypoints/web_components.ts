@@ -16,6 +16,7 @@
 import React from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { ThemeProvider, createTheme, CssBaseline } from "@mui/material";
+import { theme } from "./theme"; // Import the MUI theme from the entrypoints directory
 import type { ComponentType } from "react";
 
 // ── Default MUI theme (override in your own ThemeProvider if desired) ─────────
@@ -36,6 +37,9 @@ abstract class BaseIslandElement extends HTMLElement {
   /** React root attached to this element. */
   private [REACT_ROOT]: Root | null = null;
 
+  /** Captured initial child HTML (captured before React mounts). */
+  private initialInnerHTML: string | null = null;
+
   /** Override in subclasses to provide the React component to render. */
   protected abstract get component(): ComponentType<Record<string, unknown>>;
 
@@ -53,13 +57,22 @@ abstract class BaseIslandElement extends HTMLElement {
     if (!raw) return {};
     try {
       const parsed: unknown = JSON.parse(raw);
-      if (typeof parsed === "object" && parsed !== null && !Array.isArray(parsed)) {
+      if (
+        typeof parsed === "object" &&
+        parsed !== null &&
+        !Array.isArray(parsed)
+      ) {
         return parsed as Record<string, unknown>;
       }
-      console.warn(`[Islands] data-props on <${this.tagName.toLowerCase()}> must be a JSON object.`);
+      console.warn(
+        `[Islands] data-props on <${this.tagName.toLowerCase()}> must be a JSON object.`,
+      );
       return {};
     } catch {
-      console.error(`[Islands] Failed to parse data-props on <${this.tagName.toLowerCase()}>`, raw);
+      console.error(
+        `[Islands] Failed to parse data-props on <${this.tagName.toLowerCase()}>`,
+        raw,
+      );
       return {};
     }
   }
@@ -71,12 +84,23 @@ abstract class BaseIslandElement extends HTMLElement {
     const Component = this.component;
     const props = this.parseProps();
 
+    // If the element had child content prior to React mounting (e.g. server
+    // rendered markup placed inside the custom element), capture that HTML
+    // and forward it as the component's `children` via a single wrapper
+    // node using `dangerouslySetInnerHTML`.
+    const childrenHtml = this.initialInnerHTML ?? null;
+    const childNode = childrenHtml
+      ? React.createElement("div", {
+          dangerouslySetInnerHTML: { __html: childrenHtml },
+        })
+      : undefined;
+
     this[REACT_ROOT].render(
       React.createElement(
         ThemeProvider,
-        { theme: defaultTheme },
+        { theme: theme || defaultTheme },
         React.createElement(CssBaseline, null),
-        React.createElement(Component, props),
+        React.createElement(Component, props, childNode),
       ),
     );
   }
@@ -84,6 +108,13 @@ abstract class BaseIslandElement extends HTMLElement {
   // ── Custom Element lifecycle ───────────────────────────────────────────────
 
   connectedCallback(): void {
+    // Capture any existing child HTML before React mounts and takes over the
+    // element's contents. This allows server-rendered child elements to be
+    // forwarded to the React component as `children`.
+    if (this.initialInnerHTML === null) {
+      this.initialInnerHTML = this.innerHTML;
+    }
+
     // Create the React root the first time this element is inserted into the DOM.
     this[REACT_ROOT] = createRoot(this);
     this.render();
@@ -93,9 +124,15 @@ abstract class BaseIslandElement extends HTMLElement {
     // Unmount synchronously to release React resources and avoid Turbo Drive leaks.
     this[REACT_ROOT]?.unmount();
     this[REACT_ROOT] = null;
+    // Clear captured HTML to avoid retaining references across navigations.
+    this.initialInnerHTML = null;
   }
 
-  attributeChangedCallback(_name: string, oldValue: string | null, newValue: string | null): void {
+  attributeChangedCallback(
+    _name: string,
+    oldValue: string | null,
+    newValue: string | null,
+  ): void {
     if (oldValue !== newValue) {
       this.render();
     }
@@ -110,7 +147,10 @@ abstract class BaseIslandElement extends HTMLElement {
  * @param tagName   Hyphenated element name, e.g. "hello-island".
  * @param Component The React component to mount inside the custom element.
  */
-function registerIsland(tagName: string, Component: ComponentType<Record<string, unknown>>): void {
+function registerIsland(
+  tagName: string,
+  Component: ComponentType<Record<string, unknown>>,
+): void {
   if (customElements.get(tagName)) {
     // Already registered – skip (handles HMR re-evaluation)
     return;
@@ -156,7 +196,9 @@ for (const [path, module] of Object.entries(islandModules)) {
     continue;
   }
   if (!tagName || !tagName.includes("-")) {
-    console.warn(`[Islands] ${path} must export a 'tagName' string containing a hyphen – skipping.`);
+    console.warn(
+      `[Islands] ${path} must export a 'tagName' string containing a hyphen – skipping.`,
+    );
     continue;
   }
 

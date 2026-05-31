@@ -1,0 +1,7 @@
+<div class="container">
+    <h1>Edit Question</h1>
+    <%= react_island_tag("multi-choice-editor", { question: @sample_question.config_data, data_submit_path: question_path(@sample_question), data_submit_method: "PATCH" }) %>
+    <%= link_to question_path(@sample_question) do %>
+        <md-button variant="outlined" color="secondary">Back to question</md-button>
+    <% end %>
+</div>

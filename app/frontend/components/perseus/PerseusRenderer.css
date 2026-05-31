@@ -1,0 +1,17 @@
+fieldset {
+  border: none;
+  padding: 0;
+}
+
+div.paragraph {
+  font-family: "Roboto", sans-serif;
+}
+
+.framework-perseus.perseus-article
+  .perseus-renderer
+  .perseus-widget-passage-container
+  .perseus-widget-passage
+  div.paragraph,
+.perseus-widget-passage-container .perseus-widget-passage {
+  font-family: "Noto Serif", "Roboto", serif;
+}

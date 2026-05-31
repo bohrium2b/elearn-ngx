@@ -1,0 +1,21 @@
+<div class="container mt-4">
+    <h1>Questions</h1>
+    <div class="questions-list">
+    <ul>
+    <% @questions.each do |question| %>
+        <li>
+            <p><%= link_to "#{question.uuid}-#{question.slug}", question %></p>
+            <%= react_island_tag("question-renderer", { question: question.config_data }) %>
+            <!-- Dropdown for raw preview -->
+            <details>
+                <summary>Raw Data</summary>
+                <%= react_island_tag("basic-markdown", { content: "```json\n#{JSON.pretty_generate(question.config_data)}\n```" }) %>
+            </details>
+        </li>
+    <% end %>
+    </ul>
+    <p><%= link_to new_question_path do %>
+        <md-button variant="contained">Create New Question</md-button>
+    <% end %>
+    </div>
+</div>

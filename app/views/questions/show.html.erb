@@ -1,0 +1,22 @@
+<div class="container mt-4">
+    <h1>Question Details</h1>
+    <p><strong>UUID:</strong> <%= @question.uuid %></p>
+
+<h2>Previewing Question</h2>
+
+<%= react_island_tag("question-renderer", { question: @question.config_data }) %>
+
+<!-- Dropdown for raw preview -->
+<details>
+    <summary>Raw Data</summary>
+    <%= react_island_tag("basic-markdown", { content: "```json\n#{JSON.pretty_generate(@question.config_data)}\n```" }) %>
+</details>
+
+<div class="mt-3">
+    <%= link_to "Edit Question", edit_question_path(@question), class: "btn btn-primary" %>
+    <%= link_to "Delete Question", question_path(@question), data: { turbo_method: :delete, turbo_confirm: "Are you sure?" }, class: "btn btn-danger" %>
+    <%= link_to "Back to List", questions_path, class: "btn btn-secondary" %>
+</div>
+</div>
+
+<div style="margin-top: 20px;"></div>
