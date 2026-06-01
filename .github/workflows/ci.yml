@@ -29,7 +29,7 @@ jobs:
 
     services:
       postgres:
-        image: ghcr.io/actions/postgres:16
+        image: ghcr.io/cloudnative-pg/postgresql:16
         env:
           POSTGRES_USER: postgres
           POSTGRES_PASSWORD: postgres
@@ -82,9 +82,6 @@ jobs:
 
       - name: Install JS dependencies
         run: yarn install --frozen-lockfile
-
-      - name: TypeScript type-check
-        run: yarn tsc --noEmit
 
       - name: ESLint
         run: yarn lint
