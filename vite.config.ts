@@ -13,7 +13,16 @@ export default defineConfig({
 
     // Enables fast JSX refresh and Babel-based transforms for React
     // Allows importing SVGs as React components: import { ReactComponent as Icon } from '@/images/icon.svg'
-    svgr(),
+    svgr({
+      // Pass options directly to the underlying SVGR instance
+      svgrOptions: {
+        plugins: ["@svgr/plugin-jsx"],
+        // Fixes the JSX namespace tag warning/error
+        jsx: {
+          throwIfNamespace: false,
+        },
+      },
+    }),
     react(),
     // Copy MathJax source bundle into the built/public assets so worker
     // files (speech-worker.js, etc.) are served with correct MIME types.
@@ -37,6 +46,15 @@ export default defineConfig({
       // 'mathjax-full' layout, the loader will fall back to that.
       "mathjax/js": path.resolve(__dirname, "node_modules/mathjax/js"),
       mathjax: path.resolve(__dirname, "node_modules/mathjax"),
+      // Optionally bypass the Khan Academy mathjax-renderer which pulls in
+      // a MathJax v3-style loader that conflicts with the v4 bundle we use.
+      // This alias points imports of @khanacademy/mathjax-renderer to a
+      // no-op shim. Remove or disable this alias if you rely on the
+      // renderer's functionality elsewhere.
+      "@khanacademy/mathjax-renderer": path.resolve(
+        __dirname,
+        "app/frontend/shims/empty-mathjax-renderer.ts",
+      ),
     },
   },
 

@@ -1,0 +1,16 @@
+<div class="container-fluid">
+  <%= react_island_tag("workspace-dashboard", {
+    treeData: @tree_data,
+    untaggedQuestions: @untagged_questions.map { |question| {
+      id: question.id,
+      uuid: question.uuid,
+      slug: question.slug,
+      code: question.question_id_code,
+      label: question.question_id_code.presence || question.slug || "Question #{question.id}",
+      source_tag_id: nil
+    } },
+    refreshPath: root_path,
+    classifyPath: api_classify_question_path,
+    csrfToken: form_authenticity_token
+  }) %>
+</div>

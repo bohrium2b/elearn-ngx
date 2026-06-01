@@ -4,7 +4,7 @@
     <ul>
     <% @questions.each do |question| %>
         <li>
-            <p><%= link_to "#{question.uuid}-#{question.slug}", question %></p>
+            <p><%= link_to "#{question.uuid}-x:#{question.slug}", question %></p>
             <%= react_island_tag("question-renderer", { question: question.config_data }) %>
             <!-- Dropdown for raw preview -->
             <details>

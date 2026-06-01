@@ -24,7 +24,7 @@
   <body class="<%= content_for?(:body_class) ? yield(:body_class) : "" %>">
     <%# Flash messages %>
     <% flash.each do |type, message| %>
-      <div class="alert alert-<%= type %>" role="alert"><%= message %></div>
+      <div class="alert alert-warning" role="alert"><%= message %></div>
     <% end %>
 
     <%= yield %>

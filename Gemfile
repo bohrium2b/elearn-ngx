@@ -32,6 +32,7 @@ group :development, :test do
   gem "debug", platforms: %i[mri windows]
   gem "factory_bot_rails"
   gem "faker"
+  gem "minitest", "~> 5.27"
 end
 
 group :development do

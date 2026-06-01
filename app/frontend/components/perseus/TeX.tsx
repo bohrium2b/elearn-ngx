@@ -11,7 +11,7 @@ type TeXProps = { children: string };
  */
 function TeX({ children }: TeXProps) {
   const containerRef = useRef<HTMLSpanElement | null>(null);
-
+  console.log("Rendering TeX:", children);
   useEffect(() => {
     let mounted = true;
 
@@ -50,6 +50,7 @@ function TeX({ children }: TeXProps) {
           // Visually hide the text while keeping it selectable and
           // discoverable to screen readers. We overlay it on the SVG
           // but disable pointer events so it doesn't interfere.
+          // Keep the width to zero.
           Object.assign(acc.style, {
             position: "absolute",
             inset: "0px",
@@ -59,6 +60,9 @@ function TeX({ children }: TeXProps) {
             userSelect: "text",
             WebkitUserSelect: "text",
             whiteSpace: "pre",
+            width: "0px",
+            fontSize: "0px",
+            overflow: "hidden"
           } as Record<string, string>);
 
           el.appendChild(acc);

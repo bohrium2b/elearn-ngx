@@ -8,6 +8,16 @@ Rails.application.routes.draw do
   # Root route – update this when you add a HomeController
   # root "home#index"
 
-  root "questions#index"
+  # root "questions#index"
   resources :questions
+
+  # Tags interface
+  resources :tag
+
+  # Workspace
+  root "workspace#show"
+
+  namespace :api do
+    patch "classify_question", to: "classify_questions#update"
+  end
 end

@@ -1,0 +1,15 @@
+<%= react_island_tag("tag-show", {
+  tag: {
+    id: @tag.id,
+    uuid: @tag.uuid,
+    slug: @tag.slug,
+    name: @tag.name,
+    color: @tag.color,
+    permalink: tag_path(@tag)
+  },
+  createPath: "/tag",
+  updatePath: tag_path(@tag),
+  deletePath: tag_path(@tag),
+  workspacePath: root_path,
+  csrfToken: form_authenticity_token
+}) %>

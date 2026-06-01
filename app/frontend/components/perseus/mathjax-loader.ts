@@ -80,8 +80,13 @@ export async function renderTexToSvg(
         display: false,
       });
       const adaptor = startupMathJax.startup.adaptor;
-      const svgEl = adaptor.tags(node, "svg")[0];
-      const svg = adaptor.serializeXML(svgEl);
+      // Prefer adaptor.innerHTML to capture the entire serialized output
+      // (handles cases where MathJax produces multiple sibling nodes).
+      let svg = adaptor.innerHTML(node);
+      if (!svg) {
+        const svgEl = adaptor.tags(node, "svg")[0];
+        svg = adaptor.serializeXML(svgEl);
+      }
 
       if (typeof startupMathJax.tex2mmlPromise === "function") {
         const mml = await startupMathJax.tex2mmlPromise(texSource, {

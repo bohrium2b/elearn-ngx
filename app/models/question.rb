@@ -21,9 +21,13 @@ class Question < ApplicationRecord
 
   def to_param
     if uuid.present? && slug.present?
-      "#{uuid}-#{slug}"
+      "#{uuid}-x:#{slug}"
     else
       slug.presence || id.to_s
     end
   end
+
+  has_and_belongs_to_many :tags
+
+  scope :untagged, -> { where.missing(:tags) }
 end

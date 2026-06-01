@@ -25,6 +25,13 @@ if (typeof globalThis.MathJax === "undefined") {
     loader: {
       paths: { mathjax: "/mathjax" },
       require: (file: string) => import(file),
+      // Provide a minimal `preLoad` implementation expected by some
+      // MathJax consumers (e.g. bundles that call `MathJax.loader.preLoad`).
+      preLoad: (...modules: string[]) => {
+        const L = (globalThis as any).MathJax.loader as any;
+        if (!L || typeof L.require !== "function") return Promise.resolve([]);
+        return Promise.all(modules.map((m) => L.require(m)));
+      },
     },
   };
 }
