@@ -1,12 +1,14 @@
 # elearn-ngx
 
-A modern, interactive economics learning platform — **the next generation of [eLearn Economics](https://elearneconomics.com/)**.
+A modern, interactive economics learning platform --- **the next generation of [eLearn Economics](https://elearneconomics.com/)**.
 
-Built for students and teachers of NZ economics, elearn-ngx takes everything that worked about the original eLearn Economics and makes it better: cleaner question editing, proper LaTeX rendering, flexible exercise creation, and powerful tag-based organisation.
+<img width="1637" height="1006" alt="image" src="https://github.com/user-attachments/assets/2c5a1f74-34d9-4319-9152-1f32488b3253" />
+
+Built for students and teachers of NZ economics, elearn-ngx takes everything that worked about the original eLearn Economics and makes it better (if I do say so myself): cleaner question editing, proper LaTeX rendering, flexible exercise creation, and powerful tag-based organisation.
 
 ## What's Better
 
-elearn-ngx (the "ngx" stands for "next generation") improves on eLearn Economics in several key ways:
+elearn-ngx (the "ngx" stands for "now good xtreme") improves on the original in several key ways:
 
 - **Better MCQ Experience** — Real LaTeX/MathJax rendering in questions and answers
 - **Smarter Exercise Randomisation** — Full control over how exercises are built: pick specific static questions, randomly select from tag branches, or mix both approaches
@@ -31,7 +33,7 @@ elearn-ngx (the "ngx" stands for "next generation") improves on eLearn Economics
 - **Backend:** Ruby on Rails 7.2 with PostgreSQL
 - **Frontend:** React 18 "islands" architecture with MUI components
 - **Build Tool:** Vite for fast frontend bundling and HMR
-- **Math Rendering:** MathJax v4 / KaTeX for beautiful equations
+- **Math Rendering:** MathJax v4 and somehow v3 (maybe ...) / KaTeX for beautiful equations
 - **Exercise Engine:** Khan Academy Perseus for interactive question playback
 
 ## Manual Setup
