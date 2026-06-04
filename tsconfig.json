@@ -33,6 +33,11 @@
       "@/*": ["app/frontend/*"]
     }
   },
-  "include": ["app/frontend/**/*.ts", "app/frontend/**/*.tsx", "vite.config.ts"],
+  "include": [
+    "app/frontend/**/*.ts",
+    "app/frontend/**/*.tsx",
+    "vite.config.ts",
+    "globals.d.ts"
+  ],
   "exclude": ["node_modules", "public"]
 }
