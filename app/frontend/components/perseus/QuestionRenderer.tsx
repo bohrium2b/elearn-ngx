@@ -27,9 +27,9 @@ export const QuestionRenderer: React.ForwardRefExoticComponent<{
         <MultiChoice
           ref={mcqRef}
           {...question}
-          reviewMode={reviewMode}
+          reviewMode={reviewMode ?? false}
           showHintsUI={false}
-          numberOfHintsToShow={numberOfHintsToShow}
+          numberOfHintsToShow={numberOfHintsToShow ?? 0}
         />
       );
     default:

@@ -112,7 +112,7 @@ export const MultiChoiceEditor = React.forwardRef<
               question,
               choices,
               hints,
-              questionId,
+              questionId: questionId ?? "",
               numChoices: numChoices ?? 1,
             }}
           />
@@ -186,10 +186,15 @@ const MultiChoiceChoicesEditor: React.FC<MultiChoiceChoicesEditorProps> = (
           <IconButton
             onClick={() => {
               const newChoices = [...choices];
-              newChoices[index] = {
-                ...newChoices[index],
-                correct: !newChoices[index].correct,
-              };
+              const currentChoice = newChoices[index];
+              if (currentChoice) {
+                newChoices[index] = {
+                  content: currentChoice.content,
+                  correct: !currentChoice.correct,
+                  id: currentChoice.id,
+                  rationale: currentChoice.rationale,
+                };
+              }
               onChange(newChoices);
             }}
             sx={{ marginRight: 1 }}
@@ -208,10 +213,15 @@ const MultiChoiceChoicesEditor: React.FC<MultiChoiceChoicesEditorProps> = (
               value={choice.content}
               onChange={(value) => {
                 const newChoices = [...choices];
-                newChoices[index] = {
-                  ...newChoices[index],
-                  content: value ?? "",
-                };
+                const currentChoice = newChoices[index];
+                if (currentChoice) {
+                  newChoices[index] = {
+                    content: value ?? "",
+                    correct: currentChoice.correct,
+                    id: currentChoice.id,
+                    rationale: currentChoice.rationale,
+                  };
+                }
                 onChange(newChoices);
               }}
               placeholder={`Enter choice ${letters[index]} here...`}
@@ -222,10 +232,15 @@ const MultiChoiceChoicesEditor: React.FC<MultiChoiceChoicesEditorProps> = (
               value={choice.rationale || ""}
               onChange={(e) => {
                 const newChoices = [...choices];
-                newChoices[index] = {
-                  ...newChoices[index],
-                  rationale: e.target.value,
-                };
+                const currentChoice = newChoices[index];
+                if (currentChoice) {
+                  newChoices[index] = {
+                    content: currentChoice.content,
+                    correct: currentChoice.correct,
+                    id: currentChoice.id,
+                    rationale: e.target.value,
+                  };
+                }
                 onChange(newChoices);
               }}
               variant="outlined"

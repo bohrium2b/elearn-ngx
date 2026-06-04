@@ -13,12 +13,14 @@ export type MultiChoiceProps = MultiChoiceQuestion & {
 export type MultiChoiceChoice = {
   content: string;
   correct: boolean;
-  id?: string;
-  rationale?: string;
+  id?: string | undefined;
+  rationale?: string | undefined;
 };
 
 export type MultiChoiceRef = {
   getScore: () => number | null;
+  getSerializedState: () => any;
+  setSerializedState: (state: any) => void;
 };
 
 export const MultiChoice = React.forwardRef<MultiChoiceRef, MultiChoiceProps>(
@@ -43,9 +45,11 @@ export const MultiChoice = React.forwardRef<MultiChoiceRef, MultiChoiceProps>(
      */
     const rendererRef = React.useRef<any>(null);
 
-    // Expose the getScore method to the parent component
+    // Expose the getScore and state management methods to the parent component
     React.useImperativeHandle(ref, () => ({
       getScore: getScore,
+      getSerializedState: () => rendererRef.current?.getSerializedState(),
+      setSerializedState: (state: any) => rendererRef.current?.setSerializedState(state),
     }));
 
     const getScore = React.useCallback(() => {
@@ -64,7 +68,7 @@ export const MultiChoice = React.forwardRef<MultiChoiceRef, MultiChoiceProps>(
                 content: choice.content,
                 correct: choice.correct,
                 id: choice.id ?? "radio-choice-" + (index + 1).toString(),
-                rationale: choice.rationale,
+                rationale: choice.rationale ?? "",
               })),
               randomize: true,
               multipleSelect: (numChoices ?? 1) > 1,
@@ -90,11 +94,11 @@ export const MultiChoice = React.forwardRef<MultiChoiceRef, MultiChoiceProps>(
           question={question}
           item={item}
           hints={hints}
-          questionId={questionId}
-          onScoreChange={onScoreChange}
+          questionId={questionId ?? ""}
+          onScoreChange={onScoreChange ?? (() => { })}
           reviewMode={reviewMode}
           showHintsUI={showHintsUI}
-          numberOfHintsToShow={numberOfHintsToShow}
+          numberOfHintsToShow={numberOfHintsToShow ?? 0}
         />
       </>
     );

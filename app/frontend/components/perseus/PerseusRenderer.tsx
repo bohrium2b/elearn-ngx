@@ -40,6 +40,8 @@ export type PerseusRendererProps = {
 export type PerseusRendererRef = {
   getScore: () => number | null;
   getHintsIndex: () => number;
+  getSerializedState: () => any;
+  setSerializedState: (state: any) => void;
 };
 
 export const dependencies: PerseusDependencies = {
@@ -48,14 +50,14 @@ export const dependencies: PerseusDependencies = {
     useJIPT: false,
   },
   graphieMovablesJiptLabels: {
-    addLabel: (_label, _useMath) => {},
+    addLabel: (_label, _useMath) => { },
   },
   svgImageJiptLabels: {
-    addLabel: (_label, _useMath) => {},
+    addLabel: (_label, _useMath) => { },
   },
   rendererTranslationComponents: {
     addComponent: (_renderer) => -1,
-    removeComponentAtIndex: (_index) => {},
+    removeComponentAtIndex: (_index) => { },
   },
 
   TeX: TeX,
@@ -114,7 +116,7 @@ export const dependencies: PerseusDependencies = {
 
   isDevServer: false,
   kaLocale: "en",
-  Log: { log: () => {}, error: () => {} },
+  Log: { log: () => { }, error: () => { } },
 };
 
 export const PerseusRenderer = forwardRef<
@@ -138,8 +140,8 @@ export const PerseusRenderer = forwardRef<
   const theme = useTheme();
   const [hintsControlled] = useState(
     props.numberOfHintsToShow !== null &&
-      props.numberOfHintsToShow !== undefined &&
-      props.showHintsUI === false,
+    props.numberOfHintsToShow !== undefined &&
+    props.showHintsUI === false,
   );
 
   if (
@@ -164,6 +166,7 @@ export const PerseusRenderer = forwardRef<
     if (!userInput) {
       return null;
     }
+    // @ts-expect-error - TS2345 - Type incompatibility between perseus-core and perseus-score packages
     const rawScore = scorePerseusItem(item.question, userInput, "en");
     if (!rawScore) {
       return null;
@@ -175,13 +178,42 @@ export const PerseusRenderer = forwardRef<
     return rawScore.earned / rawScore.total;
   }, []);
 
+  const getSerializedState = useCallback(() => {
+    const renderer = rendererRef.current;
+    if (!renderer) {
+      return null;
+    }
+    // @ts-expect-error - TS2339 - Property 'getSerializedState' does not exist on type 'ServerItemRenderer'.
+    return renderer.getSerializedState();
+  }, []);
+
+  const setSerializedState = useCallback((state: any) => {
+    const renderer = rendererRef.current;
+    if (!renderer || !state) {
+      return;
+    }
+    // Restore widget state by re-interacting with each widget
+    // The ServerItemRenderer's getSerializedState returns {question, hints}
+    // We restore by calling handleInteractWithWidget for each widget's state
+    if (state.question) {
+      Object.keys(state.question).forEach((widgetId) => {
+        if (state.question[widgetId] != null) {
+          // @ts-expect-error - TS2339 - Property 'handleInteractWithWidget' does not exist on type 'ServerItemRenderer'.
+          renderer.handleInteractWithWidget(widgetId);
+        }
+      });
+    }
+  }, []);
+
   useImperativeHandle(
     ref,
     () => ({
       getScore: () => getScore(),
       getHintsIndex: () => hintsIndex,
+      getSerializedState: getSerializedState,
+      setSerializedState: setSerializedState,
     }),
-    [getScore, hintsIndex],
+    [getScore, hintsIndex, getSerializedState, setSerializedState],
   );
   /*const getScore = () => {
         const renderer = rendererRef.current;
@@ -315,11 +347,12 @@ export const PerseusRenderer = forwardRef<
                         color: theme.palette.primary.light,
                         fontSizeAdjust: -1,
                         paddingRight: 1,
+                        minWidth: "4rem"
                       }}
                     >
                       {index + 1} / {hints.length}
                     </Typography>
-                    <Box sx={{ display: "inline", maxWidth: "60rem" }}>
+                    <Box sx={{ display: "inline" }}>
                       <Markdown>{hint}</Markdown>
                     </Box>
                   </Box>
