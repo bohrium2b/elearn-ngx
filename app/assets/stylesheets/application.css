@@ -13,3 +13,11 @@
  *= require_tree .
  *= require_self
  */
+
+:root {
+  --bs-body-bg: #f8fafc;
+}
+
+body {
+  background-color: #f8fafc;
+}
