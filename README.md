@@ -3,6 +3,7 @@
 A modern, interactive economics learning platform --- **the next generation of [eLearn Economics](https://elearneconomics.com/)**.
 
 <img width="1637" height="1006" alt="image" src="https://github.com/user-attachments/assets/2c5a1f74-34d9-4319-9152-1f32488b3253" />
+*(Why does the screenshot have SAT questions, you may ask? The answer is simple: because I can. Also because it allows me to try out bigger passage questions and different types of formatting, etc.)*
 
 Built for students and teachers of NZ economics, elearn-ngx takes everything that worked about the original eLearn Economics and makes it better (if I do say so myself): cleaner question editing, proper LaTeX rendering, flexible exercise creation, and powerful tag-based organisation.
 
