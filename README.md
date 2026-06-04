@@ -1,44 +1,40 @@
 # elearn-ngx
 
-> A Ruby on Rails application using an **Islands Architecture** for interactive UI — React + MUI components mounted as native HTML5 Web Components (Custom Elements) inside server-rendered Rails views.
+A modern, interactive economics learning platform — **the next generation of [eLearn Economics](https://elearneconomics.com/)**.
 
----
+Built for students and teachers of NZ economics, elearn-ngx takes everything that worked about the original eLearn Economics and makes it better: cleaner question editing, proper LaTeX rendering, flexible exercise creation, and powerful tag-based organisation.
 
-## Architecture Overview
+## What's Better
 
-```
-Rails server-rendered HTML
-  └── <hello-island data-props='{"greeting":"Hi"}'></hello-island>
-          ↑ Custom Element (Web Component) registered by web_components.ts
-          └── React component wrapped in MUI ThemeProvider
-```
+elearn-ngx (the "ngx" stands for "next generation") improves on eLearn Economics in several key ways:
 
-| Layer | Technology |
-|---|---|
-| Server rendering | Ruby on Rails 7.2 |
-| Database | PostgreSQL 16 |
-| Frontend bundler | Vite (via `vite_rails` gem) |
-| Interactive islands | React 18 + MUI v5 |
-| Custom Elements glue | Native HTML5 Web Components API |
-| CSS | Tailwind CSS (optional) + MUI |
-| Turbo compatibility | `root.unmount()` in `disconnectedCallback` |
+- **Better MCQ Experience** — Real LaTeX/MathJax rendering in questions and answers
+- **Smarter Exercise Randomisation** — Full control over how exercises are built: pick specific static questions, randomly select from tag branches, or mix both approaches
+- **Tag Organisation** — Organise questions into hierarchical tags (e.g., Microeconomics → Supply & Demand → Elasticity) for easy browsing and targeted practice
+- **Good Question Editor** — Write questions with Markdown support, preview LaTeX in real-time, and manage multiple choice options with ease. Add hints and answer rationale.
 
----
+## Features
 
-## Getting Started
+- **Questions** — Create and edit multi-choice questions with Markdown and LaTeX support
+- **Exercises** — Build randomised exercises with flexible selection rules (by tag, static questions, or both)
+- **Tags** — Hierarchical tagging system for organising questions by topic
+- **Workspace** — Drag-and-drop dashboard for managing questions and their tag assignments
+- **Interactive Player** — Khan Academy Perseus-powered exercise player with hints and feedback
 
-### Prerequisites
+## The future
+- **Article Module** - MDX-based article rendering
+- **Macro organisation** - attach articles to exercises and tags, and organise articles into topics and course flows
+- **Reporting** - keep track of your progress over time :)
 
-- Ruby 3.3+
-- Node.js 20+
-- PostgreSQL 16
-- Yarn or npm
+## Architecture
 
-### With Dev Container (recommended)
+- **Backend:** Ruby on Rails 7.2 with PostgreSQL
+- **Frontend:** React 18 "islands" architecture with MUI components
+- **Build Tool:** Vite for fast frontend bundling and HMR
+- **Math Rendering:** MathJax v4 / KaTeX for beautiful equations
+- **Exercise Engine:** Khan Academy Perseus for interactive question playback
 
-Open this repository in VS Code and click **"Reopen in Container"** — the devcontainer will install all dependencies automatically.
-
-### Manual Setup
+## Manual Setup
 
 ```bash
 # 1. Clone
@@ -61,32 +57,6 @@ bin/rails server              # http://localhost:3000
 yarn dev                      # Vite HMR on http://localhost:3036
 ```
 
----
-
-## Adding a New React Island
-
-1. Create `app/frontend/components/islands/my-widget.tsx`:
-
-```tsx
-export const tagName = "my-widget";
-
-interface MyWidgetProps { label?: string }
-
-export default function MyWidget({ label = "Hello" }: MyWidgetProps) {
-  return <div>{label}</div>;
-}
-```
-
-2. Use it in any Rails ERB view:
-
-```erb
-<%= react_island_tag("my-widget", { label: "Click me" }) %>
-```
-
-That's it — `web_components.ts` auto-discovers the file and registers `<my-widget>` as a Custom Element.
-
----
-
 ## Development
 
 | Command | Description |
@@ -104,7 +74,5 @@ That's it — `web_components.ts` auto-discovers the file and registers `<my-wid
 
 GitHub Actions runs on every push/PR:
 - RuboCop (Ruby linting)
-- TypeScript compile-check (`tsc --noEmit`)
 - ESLint
 - Rails test suite (with PostgreSQL service container)
-
