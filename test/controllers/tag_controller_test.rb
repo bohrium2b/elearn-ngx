@@ -64,7 +64,11 @@ class TagControllerTest < ActionDispatch::IntegrationTest
     question = create(:question)
     tag.questions << question
 
-    delete tag_path(tag)
+    # Fetch CSRF token from root so the DELETE request is authorized
+    get root_path
+    csrf_token = response.body[/meta name="csrf-token" content="([^"]+)"/, 1]
+
+    delete tag_path(tag), env: { "HTTP_X_CSRF_TOKEN" => csrf_token }
 
     assert_redirected_to root_path
     assert_not Tag.exists?(tag.id)

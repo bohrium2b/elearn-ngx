@@ -10,10 +10,17 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.2].define(version: 2026_05_31_221211) do
+ActiveRecord::Schema[7.2].define(version: 2026_06_02_015123) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pgcrypto"
   enable_extension "plpgsql"
+
+  create_table "exercises", force: :cascade do |t|
+    t.string "title"
+    t.jsonb "spec"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+  end
 
   create_table "questions", force: :cascade do |t|
     t.string "question_id_code"

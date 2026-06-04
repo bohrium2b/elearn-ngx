@@ -1,19 +1,12 @@
 class QuestionsController < ApplicationController
   def index
     @questions = Question.all
-    @sample_question = Question.new(
-      config_data: {
-        question: "What is $2 + 2x?$",
-        choices: [{ content: "3", correct: false }, { content: "4", correct: true }, { content: "5", correct: false }],
-        hints: ["It's more than 3", "It's less than 5"],
-        numChoices: 1,
-        type: "multi-choice"
-      }
-    )
+    render json: @questions.map { |question| serialize_question(question) }
   end
 
   def show
     @question = find_question_by_param(params[:id])
+    render json: serialize_question(@question)
   end
 
   def new

@@ -1,10 +1,13 @@
 class TagController < ApplicationController
   def index
-    # Pass
+    # Return full tag tree with questions
+    root_tags = Tag.where(parent_id: nil).includes(:children, :questions)
+    render json: root_tags.map { |tag| build_tag_tree(tag) }
   end
 
   def show
     @tag = find_tag_by_param(params[:id])
+    render json: build_tag_tree(@tag)
   end
 
   def create
@@ -103,6 +106,38 @@ class TagController < ApplicationController
       slug: tag.slug,
       color: tag.color,
       permalink: tag_path(tag)
+    }
+  end
+
+  def build_tag_tree(tag)
+    {
+      id: tag.id,
+      uuid: tag.uuid,
+      name: tag.name,
+      slug: tag.slug,
+      color: tag.color,
+      permalink: tag_path(tag),
+      type: "tag",
+      questions: tag.questions.map { |q| serialize_question(q) },
+      children: tag.children.map { |child| build_tag_tree(child) }
+    }
+  end
+
+  def serialize_question(question)
+    config_data = question.config_data || {}
+    {
+      id: question.id,
+      uuid: question.uuid,
+      slug: question.slug,
+      code: question.question_id_code,
+      label: question.question_id_code.presence || question.slug || "Question #{question.id}",
+      question: config_data["question"],
+      choices: config_data["choices"] || [],
+      hints: config_data["hints"] || [],
+      numChoices: config_data["numChoices"] || 1,
+      showPath: question_path(question),
+      updatePath: question_path(question),
+      type: "question"
     }
   end
 end

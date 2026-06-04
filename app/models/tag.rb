@@ -17,6 +17,25 @@ class Tag < ApplicationRecord
     "#{uuid}-x:#{slug.sub('tag-', '')}"
   end
 
+  def all_descendants
+    children.flat_map { |child| [child] + child.all_descendants }
+  end
+
+  def total_questions_in_branch
+    (questions + all_descendants.flat_map(&:questions)).uniq.count
+  end
+
+  def is_ancestor_of?(other_tag)
+    return false if other_tag.nil?
+
+    current_parent = other_tag.parent
+    while current_parent
+      return true if current_parent == self
+      current_parent = current_parent.parent
+    end
+    false
+  end
+
   private
 
   def ensure_uuid
@@ -61,3 +80,4 @@ class Tag < ApplicationRecord
     questions.clear
   end
 end
+

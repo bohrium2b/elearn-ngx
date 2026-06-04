@@ -42,4 +42,41 @@ class TagTest < ActiveSupport::TestCase
     assert_not Tag.exists?(child.id)
     assert_empty question.reload.tags
   end
+
+  # Test Case: Assert that calling .total_questions_in_branch on a parent tag successfully counts questions mapped directly to it as well as its descendant tags.
+  test "all_applicable_questions includes questions from descendants" do
+    root = create(:tag)
+    child = create(:tag, parent: root)
+
+    q_root = create(:question)
+    q_child = create(:question)
+
+    root.questions << q_root
+    child.questions << q_child
+
+    assert_equal 2, root.total_questions_in_branch
+  end
+
+  # Test Case: Assert that when an exercise session is resolved, questions explicitly selected by a static UUID rule are not duplicated.
+  test "resolve exercise spec deduplicates static and dynamic questions" do
+    tag = create(:tag)
+    question = create(:question)
+    tag.questions << question
+
+    static_uuid = question.uuid
+
+    spec = {
+      "selection_rules" => [
+        { "type" => "dynamic_tag", "tag_uuid" => tag.uuid, "count" => 5, "strategy" => "random" },
+        { "type" => "static_question", "question_uuid" => static_uuid }
+      ]
+    }
+
+    exercise = Exercise.new(title: "Dedup Test", spec: spec)
+    assert exercise.valid?, "Exercise should be valid"
+
+    resolved = @controller.send(:resolve_exercise_spec, spec)
+    uuids = resolved.map { |q| q[:uuid] }
+    assert_equal uuids.uniq.count, uuids.count, "Questions should be unique"
+  end
 end
