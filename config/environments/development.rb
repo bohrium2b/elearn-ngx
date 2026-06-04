@@ -44,6 +44,8 @@ Rails.application.configure do
 
   # -- HOSTS -──────────────────────────────────────────────────────────────
   config.hosts << "curly-memory-pqr65q7xgjwc7jv7-3000.app.github.dev"
+  config.hosts << "localhost:3000"
+  config.hosts << "127.0.0.1:3000"
   # Allow origin mismatch for local development behind the Codespaces/GitHub proxy
   # and permit the forwarded app.github.dev host for Action Cable connections.
   config.action_controller.forgery_protection_origin_check = false

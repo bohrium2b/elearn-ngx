@@ -1,0 +1,36 @@
+<div class="container mx-auto px-4 py-8">
+  <div class="flex justify-between items-center mb-6">
+    <h1 class="text-2xl font-bold">Exercises</h1>
+    <a href="<%= new_exercise_path %>" class="btn btn-primary mb-3">
+      Create New Exercise
+    </a>
+  </div>
+  
+  <% if @exercises.any? %>
+    <div class="grid gap-4">
+      <% @exercises.each do |exercise| %>
+        <div class="card bg-base-100 shadow-xl mb-3">
+          <div class="card-body">
+            <h2 class="card-title"><%= exercise.title %></h2>
+            <p class="text-sm text-gray-500">Created: <%= exercise.created_at.strftime("%B %d, %Y") %></p>
+            <div class="card-actions justify-end">
+              <a href="<%= edit_exercise_path(exercise) %>" class="btn btn-secondary">
+                Edit
+              </a>
+              <a href="<%= start_exercise_path(exercise) %>" class="btn btn-primary">
+                Start Exercise
+              </a>
+            </div>
+          </div>
+        </div>
+      <% end %>
+    </div>
+  <% else %>
+    <div class="text-center py-12">
+      <p class="text-gray-500 mb-4">No exercises yet. Create your first exercise!</p>
+      <a href="<%= new_exercise_path %>" class="btn btn-primary">
+        Create New Exercise
+      </a>
+    </div>
+  <% end %>
+</div>

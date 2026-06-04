@@ -17,7 +17,7 @@
     <%= vite_javascript_tag "application.ts", defer: true %>
     <%= vite_javascript_tag "web_components.ts", defer: true %>
     <%= vite_stylesheet_tag "application", media: "all" if ViteRails.instance.manifest.path_for("application.css") rescue nil %>
-
+    <%= stylesheet_link_tag "application", "data-turbo-track": "reload" %>
     <%= yield :head %>
   </head>
 

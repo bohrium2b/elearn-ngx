@@ -2,6 +2,11 @@ class Question < ApplicationRecord
   before_validation :ensure_uuid, on: :create
   before_validation :ensure_slug, on: :create
 
+  def ensure_valid_question_structure
+    # This method checks that the question has a valid structure, e.g., its config_data key is in the form
+    # { "type": "multi-choice", "question": "...", "choices": [{ "content": "...", "correct": true, "rationale": "..."}, ...], "hints": ["..."]}
+  end
+
   def ensure_uuid
     self.uuid ||= SecureRandom.uuid
   end

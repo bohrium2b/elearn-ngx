@@ -3,6 +3,6 @@
 if Rails.env.development?
   Rails.application.config.session_store :cookie_store,
                                          key: "_elearn_session",
-                                         same_site: :none,
-                                         secure: true
+                                         same_site: :lax,
+                                         secure: false
 end

@@ -14,6 +14,13 @@ Rails.application.routes.draw do
   # Tags interface
   resources :tag
 
+  # Exercises interface
+  resources :exercises do
+    member do
+      get 'start'
+    end
+  end
+
   # Workspace
   root "workspace#show"
 
@@ -21,3 +28,4 @@ Rails.application.routes.draw do
     patch "classify_question", to: "classify_questions#update"
   end
 end
+

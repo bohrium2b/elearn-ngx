@@ -1,5 +1,5 @@
-import MultiChoiceEditorMemo from "../perseus/MultiChoiceEditor";
-import { MultiChoiceRef } from "../perseus/MultiChoice";
+import MultiChoiceEditorMemo, { MultiChoiceEditorRef } from "../perseus/MultiChoiceEditor";
+import { MultiChoiceChoice } from "../perseus/MultiChoice";
 import { Typography } from "@mui/material";
 import React, { useEffect, useRef, useState } from "react";
 import { Button } from "@mui/material";
@@ -8,11 +8,7 @@ import Input from "@mui/material/Input";
 import FormLabel from "@mui/material/FormLabel"
 import { toast, Toaster } from "react-hot-toast";
 
-type ChoiceDraft = {
-  content?: string;
-  correct?: boolean;
-  rationale?: string;
-};
+type ChoiceDraft = MultiChoiceChoice;
 
 function validateQuestionDraft(questionText: string, choices: ChoiceDraft[]) {
   const normalizedQuestion = questionText.trim();
@@ -38,7 +34,7 @@ export const MultiChoiceEditor: React.FC<{
   data_submit_method?: string;
   slug: string;
 }> = ({ question, data_submit_path, data_submit_method, slug }) => {
-  const mcqRef = useRef<MultiChoiceRef>(null);
+  const mcqRef = useRef<MultiChoiceEditorRef>(null);
   const [currentSlug, setCurrentSlug] = useState(slug);
   const [validationError, setValidationError] = useState<string | null>(null);
   return (
