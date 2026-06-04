@@ -16,7 +16,7 @@
 import React from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { ThemeProvider, createTheme, CssBaseline } from "@mui/material";
-import { theme } from "./theme"; // Import the MUI theme from the entrypoints directory
+import workspaceTheme from "./theme"; // Import the MUI theme from the entrypoints directory
 import type { ComponentType } from "react";
 
 // ── Default MUI theme (override in your own ThemeProvider if desired) ─────────
@@ -98,7 +98,7 @@ abstract class BaseIslandElement extends HTMLElement {
     this[REACT_ROOT].render(
       React.createElement(
         ThemeProvider,
-        { theme: theme || defaultTheme },
+        { theme: workspaceTheme || defaultTheme },
         React.createElement(CssBaseline, null),
         React.createElement(Component, props, childNode),
       ),
