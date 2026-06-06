@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title><%= content_for?(:title) ? yield(:title) : "Sign In" %> | E-Learn</title>
+  <%= csrf_meta_tags %>
+  <%= csp_meta_tag %>
+  <%= vite_client_tag %>
+    <%= vite_javascript_tag "application.ts", defer: true %>
+    <%= vite_javascript_tag "web_components.ts", defer: true %>
+    <%= vite_stylesheet_tag "application", media: "all" if ViteRails.instance.manifest.path_for("application.css") rescue nil %>
+    <%= stylesheet_link_tag "application", "data-turbo-track": "reload" %>
+</head>
+<body class="auth-layout">
+  <div class="auth-container">
+    <div class="auth-card">
+      <div class="auth-header">
+        <%= link_to root_path, class: "auth-logo" do %>
+          <h1>E-Learn</h1>
+        <% end %>
+      </div>
+
+      <% if flash[:notice] %>
+        <div class="alert alert-success" role="alert">
+          <%= flash[:notice] %>
+        </div>
+      <% end %>
+
+      <% if flash[:alert] %>
+        <div class="alert alert-danger" role="alert">
+          <%= flash[:alert] %>
+        </div>
+      <% end %>
+
+      <div class="auth-body">
+        <%= yield %>
+      </div>
+
+      <div class="auth-footer">
+        <p>&copy; <%= Date.current.year %> E-Learn Platform</p>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

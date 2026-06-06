@@ -1,16 +1,21 @@
 class QuestionsController < ApplicationController
+  before_action :authenticate_user!, except: %i[index show]
+  before_action :set_question, only: %i[show edit update destroy]
+  after_action :verify_authorized, except: :index
+
   def index
     @questions = Question.all
     render json: @questions.map { |question| serialize_question(question) }
   end
 
   def show
-    @question = find_question_by_param(params[:id])
+    authorize @question
     render json: serialize_question(@question)
   end
 
   def new
     @question = Question.new
+    authorize @question
     @sample_question = Question.new(
       config_data: {
         question: "Question text goes here",
@@ -25,7 +30,7 @@ class QuestionsController < ApplicationController
   end
 
   def edit
-    @question = find_question_by_param(params[:id])
+    authorize @question
     @sample_question = @question || Question.new(
       config_data: {
         question: "Question text goes here",
@@ -40,6 +45,7 @@ class QuestionsController < ApplicationController
 
   def create
     @question = Question.new
+    authorize @question
     payload = question_params
 
     question_config = {
@@ -67,7 +73,7 @@ class QuestionsController < ApplicationController
   end
 
   def update
-    @question = find_question_by_param(params[:id])
+    authorize @question
     payload = question_params
     question_config = {
       question: payload.fetch(:question, ""),
@@ -97,7 +103,7 @@ class QuestionsController < ApplicationController
   end
 
   def destroy
-    @question = find_question_by_param(params[:id])
+    authorize @question
     if @question.destroy
       if request.format.json? || request.content_type&.include?("application/json")
         render json: { status: "success" }, status: :ok
@@ -113,6 +119,10 @@ class QuestionsController < ApplicationController
   end
 
   private
+
+  def set_question
+    @question = find_question_by_param(params[:id])
+  end
 
   def find_question_by_param(param)
     key = param.to_s

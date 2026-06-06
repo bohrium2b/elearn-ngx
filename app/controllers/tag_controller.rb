@@ -1,4 +1,8 @@
 class TagController < ApplicationController
+  before_action :authenticate_user!, except: %i[index show]
+  before_action :set_tag, only: %i[show edit update destroy]
+  after_action :verify_authorized, except: :index
+
   def index
     # Return full tag tree with questions
     root_tags = Tag.where(parent_id: nil).includes(:children, :questions)
@@ -6,12 +10,22 @@ class TagController < ApplicationController
   end
 
   def show
-    @tag = find_tag_by_param(params[:id])
+    authorize @tag
     render json: build_tag_tree(@tag)
+  end
+
+  def new
+    @tag = Tag.new
+    authorize @tag
+  end
+
+  def edit
+    authorize @tag
   end
 
   def create
     @tag = Tag.new(tag_params(for_create: true))
+    authorize @tag
 
     if @tag.save
       respond_to do |format|
@@ -30,7 +44,7 @@ class TagController < ApplicationController
   end
 
   def update
-    @tag = find_tag_by_param(params[:id])
+    authorize @tag
 
     if @tag.update(tag_params(for_create: false, current_tag: @tag))
       respond_to do |format|
@@ -49,7 +63,7 @@ class TagController < ApplicationController
   end
 
   def destroy
-    @tag = find_tag_by_param(params[:id])
+    authorize @tag
 
     if @tag.destroy
       redirect_to root_path
@@ -59,6 +73,10 @@ class TagController < ApplicationController
   end
 
   private
+
+  def set_tag
+    @tag = find_tag_by_param(params[:id])
+  end
 
   def find_tag_by_param(param)
     key = param.to_s

@@ -9,7 +9,7 @@
   <% if @exercises.any? %>
     <div class="grid gap-4">
       <% @exercises.each do |exercise| %>
-        <div class="card bg-base-100 shadow-xl mb-3">
+        <div class="card bg-white shadow-xl mb-3">
           <div class="card-body">
             <h2 class="card-title"><%= exercise.title %></h2>
             <p class="text-sm text-gray-500">Created: <%= exercise.created_at.strftime("%B %d, %Y") %></p>

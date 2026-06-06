@@ -1,5 +1,9 @@
 class WorkspaceController < ApplicationController
+  before_action :authenticate_user!, except: [:show]
+  after_action :verify_authorized
+
   def show
+    authorize :workspace, :show?
     @untagged_questions = Question.untagged
     @tree_data = Tag.where(parent_id: nil).map { |root_tag| assemble_tree_node(root_tag) }
 
@@ -7,6 +11,12 @@ class WorkspaceController < ApplicationController
       format.html
       format.json { render json: build_workspace_payload }
     end
+  end
+
+  def update
+    authorize :workspace, :update?
+    # Update workspace logic
+    redirect_to workspace_path, notice: "Workspace updated successfully."
   end
 
   private

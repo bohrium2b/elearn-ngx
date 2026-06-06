@@ -22,11 +22,38 @@
   </head>
 
   <body class="<%= content_for?(:body_class) ? yield(:body_class) : "" %>">
+    <%# Global Navigation Island %>
+    <% if user_signed_in? %>
+      <app-navigation
+        username="<%= current_user.username %>"
+        avatar_url="<%= current_user.avatar_url %>"
+        role="<%= current_user.role_name %>"
+        authenticated="true"
+      ></app-navigation>
+    <% else %>
+      <app-navigation authenticated="false"></app-navigation>
+    <% end %>
+
     <%# Flash messages %>
     <% flash.each do |type, message| %>
       <div class="alert alert-warning" role="alert"><%= message %></div>
     <% end %>
 
-    <%= yield %>
+    <main class="main-content">
+      <%= yield %>
+    </main>
+
+    <%# Initialize theme on page load to prevent flash of light mode %>
+    <script>
+      (function() {
+        var stored = localStorage.getItem('elearn-theme-mode');
+        var systemPrefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+        var isDark = stored === 'dark' || (stored === 'system' && systemPrefersDark) || (!stored && systemPrefersDark);
+        if (isDark) {
+          document.documentElement.setAttribute('data-theme', 'dark');
+          document.body.classList.add('dark-mode');
+        }
+      })();
+    </script>
   </body>
 </html>

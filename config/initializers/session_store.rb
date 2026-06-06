@@ -1,8 +1,16 @@
-# Development-only session cookie settings to allow cross-site requests from
-# the local Vite dev server when using the GitHub Codespaces / app.github.dev proxy.
+# Session cookie configuration
+# Development: relaxed settings for local Vite dev server compatibility
+# Production: secure flags enabled for security
 if Rails.env.development?
   Rails.application.config.session_store :cookie_store,
                                          key: "_elearn_session",
                                          same_site: :lax,
-                                         secure: false
+                                         secure: false,
+                                         httponly: true
+else
+  Rails.application.config.session_store :cookie_store,
+                                         key: "_elearn_session",
+                                         same_site: :lax,
+                                         secure: true,
+                                         httponly: true
 end

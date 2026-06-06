@@ -1,0 +1,357 @@
+/* app-navigation.css – Global Navigation Island Styles */
+
+/* Light mode styles (default) */
+.app-nav {
+  background: white;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  position: sticky;
+  top: 0;
+  z-index: 1000;
+}
+
+.nav-container {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 0 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 64px;
+}
+
+.nav-brand {
+  display: flex;
+  align-items: center;
+}
+
+.nav-logo {
+  font-size: 24px;
+  font-weight: 700;
+  color: #667eea;
+  text-decoration: none;
+}
+
+.nav-logo:hover {
+  color: #764ba2;
+}
+
+.nav-items {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.nav-item {
+  padding: 8px 16px;
+  color: #495057;
+  text-decoration: none;
+  border-radius: 6px;
+  transition: background-color 0.2s, color 0.2s;
+}
+
+.nav-item:hover {
+  background: #f8f9fa;
+  color: #667eea;
+}
+
+.nav-auth {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.nav-auth .btn-primary {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  padding: 10px 20px;
+  border-radius: 6px;
+  text-decoration: none;
+  font-weight: 500;
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.nav-auth .btn-primary:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+  color: white;
+}
+
+/* User menu container */
+.nav-user {
+  position: relative;
+}
+
+/* User menu trigger */
+.user-menu {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  padding: 6px 12px;
+  border-radius: 8px;
+  transition: background-color 0.2s;
+}
+
+.user-menu:hover {
+  background: #f8f9fa;
+}
+
+/* Avatar styles */
+.user-avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid #e9ecef;
+}
+
+.user-avatar-placeholder {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 600;
+  font-size: 14px;
+  border: 2px solid #e9ecef;
+}
+
+.user-name {
+  font-weight: 500;
+  color: #495057;
+  font-size: 14px;
+}
+
+/* Dropdown menu */
+.user-dropdown {
+  display: none;
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+  min-width: 200px;
+  padding: 8px;
+  z-index: 1001;
+}
+
+/* Hover bridge - invisible area that connects trigger to dropdown */
+.user-dropdown::before {
+  content: '';
+  position: absolute;
+  top: -12px;
+  left: 0;
+  right: 0;
+  height: 12px;
+}
+
+/* Show dropdown on hover */
+.user-menu:hover .user-dropdown,
+.user-dropdown:hover {
+  display: block;
+  animation: dropdownFadeIn 0.15s ease-out;
+}
+
+/* Dropdown items */
+.dropdown-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  color: #495057;
+  text-decoration: none;
+  border-radius: 8px;
+  transition: background-color 0.15s, color 0.15s;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.dropdown-item:hover {
+  background: #f8f9fa;
+  color: #667eea;
+}
+
+/* Dropdown divider */
+.dropdown-divider {
+  height: 1px;
+  background: #e9ecef;
+  margin: 6px 0;
+}
+
+/* Dropdown header */
+.dropdown-header {
+  padding: 8px 14px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #6c757d;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+/* Animation */
+@keyframes dropdownFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Chevron indicator */
+.user-menu::after {
+  content: '';
+  width: 0;
+  height: 0;
+  border-left: 4px solid transparent;
+  border-right: 4px solid transparent;
+  border-top: 4px solid #6c757d;
+  margin-left: 4px;
+  transition: transform 0.2s;
+}
+
+.user-menu:hover::after {
+  transform: rotate(180deg);
+}
+
+/* Theme toggle button */
+.theme-toggle {
+  padding: 6px;
+  color: #495057;
+  transition: color 0.2s;
+}
+
+.theme-toggle:hover {
+  color: #667eea;
+}
+
+/* Dark mode styles */
+[data-theme="dark"] .app-nav,
+.dark-mode .app-nav {
+  background: #1e293b;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+[data-theme="dark"] .nav-logo,
+.dark-mode .nav-logo {
+  color: #60a5fa;
+}
+
+[data-theme="dark"] .nav-logo:hover,
+.dark-mode .nav-logo:hover {
+  color: #93c5fd;
+}
+
+[data-theme="dark"] .nav-item,
+.dark-mode .nav-item {
+  color: #cbd5e1;
+}
+
+[data-theme="dark"] .nav-item:hover,
+.dark-mode .nav-item:hover {
+  background: #334155;
+  color: #60a5fa;
+}
+
+[data-theme="dark"] .user-menu,
+.dark-mode .user-menu {
+  color: #cbd5e1;
+}
+
+[data-theme="dark"] .user-menu:hover,
+.dark-mode .user-menu:hover {
+  background: #334155;
+}
+
+[data-theme="dark"] .user-name,
+.dark-mode .user-name {
+  color: #cbd5e1;
+}
+
+[data-theme="dark"] .user-avatar-placeholder,
+.dark-mode .user-avatar-placeholder {
+  border-color: #475569;
+}
+
+[data-theme="dark"] .user-dropdown,
+.dark-mode .user-dropdown {
+  background: #1e293b;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+}
+
+[data-theme="dark"] .dropdown-item,
+.dark-mode .dropdown-item {
+  color: #cbd5e1;
+}
+
+[data-theme="dark"] .dropdown-item:hover,
+.dark-mode .dropdown-item:hover {
+  background: #334155;
+  color: #60a5fa;
+}
+
+[data-theme="dark"] .dropdown-divider,
+.dark-mode .dropdown-divider {
+  background: #475569;
+}
+
+[data-theme="dark"] .dropdown-header,
+.dark-mode .dropdown-header {
+  color: #94a3b8;
+}
+
+[data-theme="dark"] .theme-toggle,
+.dark-mode .theme-toggle {
+  color: #cbd5e1;
+}
+
+[data-theme="dark"] .theme-toggle:hover,
+.dark-mode .theme-toggle:hover {
+  color: #60a5fa;
+}
+
+/* Dark mode for main content background */
+[data-theme="dark"] body,
+.dark-mode body {
+  background-color: #0f172a;
+  color: #f1f5f9;
+}
+
+/* Dark mode for main content */
+[data-theme="dark"] .main-content,
+.dark-mode .main-content {
+  background-color: #0f172a;
+  min-height: 100vh;
+}
+
+/* Dark mode for alert messages */
+[data-theme="dark"] .alert-warning,
+.dark-mode .alert-warning {
+  background-color: #f59e0b;
+  color: #0f172a;
+}
+
+@media (max-width: 768px) {
+  .nav-container {
+    flex-wrap: wrap;
+    height: auto;
+    padding: 12px 20px;
+  }
+
+  .nav-items {
+    order: 3;
+    width: 100%;
+    justify-content: center;
+    margin-top: 12px;
+  }
+
+  .user-name {
+    display: none;
+  }
+}

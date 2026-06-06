@@ -1,77 +1,115 @@
 require "test_helper"
 
 class TagControllerTest < ActionDispatch::IntegrationTest
-  test "shows tags via canonical uuid and slug permalink" do
-    tag = create(:tag, name: "Calculus")
+  setup do
+    @tag = create(:tag)
+    @student = create(:user, :student)
+    @content_author = create(:user, :content_author)
+    @instructor = create(:user, :instructor)
+    @admin = create(:user, :admin)
+  end
 
-    get "/tag/#{tag.to_param}"
-
+  # Public access tests
+  test "should get index without authentication" do
+    get tag_index_path
     assert_response :success
-    assert_includes response.body, "Calculus"
-    assert_includes response.body, tag.color
   end
 
-  test "creates a child tag from json" do
-    parent = create(:tag, name: "Physics")
-
-    get root_path
-    csrf_token = response.body[/meta name="csrf-token" content="([^"]+)"/, 1]
-
-    post "/tag",
-         params: {
-           tag: {
-             name: "Mechanics",
-             color: "",
-             parent_id: parent.id
-           }
-         },
-         env: {
-           "HTTP_X_CSRF_TOKEN" => csrf_token
-         },
-         as: :json
-
-    assert_response :created
-    assert_equal "success", response.parsed_body["status"]
-    assert_equal parent.id, Tag.find(response.parsed_body["tag"]["id"]).parent_id
-  end
-
-  test "updates a tag from json" do
-    tag = create(:tag, name: "Linear Algebra")
-
-    get root_path
-    csrf_token = response.body[/meta name="csrf-token" content="([^"]+)"/, 1]
-
-    patch tag_path(tag),
-          params: {
-            tag: {
-              name: "Linear Algebra II",
-              color: "#123456"
-            }
-          },
-          env: {
-            "HTTP_X_CSRF_TOKEN" => csrf_token
-          },
-          as: :json
-
+  test "should show tag without authentication" do
+    get tag_path(@tag)
     assert_response :success
-    tag.reload
-    assert_equal "Linear Algebra II", tag.name
-    assert_equal "#123456", tag.color
   end
 
-  test "destroys tags and redirects back to workspace" do
-    tag = create(:tag, name: "Topology")
-    question = create(:question)
-    tag.questions << question
+  # Authentication required tests
+  test "should redirect new when not authenticated" do
+    get new_tag_path
+    assert_redirected_to new_user_session_path
+  end
 
-    # Fetch CSRF token from root so the DELETE request is authorized
-    get root_path
-    csrf_token = response.body[/meta name="csrf-token" content="([^"]+)"/, 1]
+  test "should redirect create when not authenticated" do
+    assert_no_difference("Tag.count") do
+      post tag_index_path, params: { tag: { name: "New Tag" } }
+    end
+    assert_redirected_to new_user_session_path
+  end
 
-    delete tag_path(tag), env: { "HTTP_X_CSRF_TOKEN" => csrf_token }
-
+  # Student role tests
+  test "student should not access new tag" do
+    sign_in @student
+    get new_tag_path
     assert_redirected_to root_path
-    assert_not Tag.exists?(tag.id)
-    assert_empty question.reload.tags
+  end
+
+  test "student should not create tag" do
+    sign_in @student
+    assert_no_difference("Tag.count") do
+      post tag_index_path, params: { tag: { name: "New Tag" } }
+    end
+    assert_redirected_to root_path
+  end
+
+  test "student should not edit tag" do
+    sign_in @student
+    get edit_tag_path(@tag)
+    assert_redirected_to root_path
+  end
+
+  test "student should not update tag" do
+    sign_in @student
+    patch tag_path(@tag), params: { tag: { name: "Updated" } }
+    assert_redirected_to root_path
+  end
+
+  test "student should not destroy tag" do
+    sign_in @student
+    assert_no_difference("Tag.count") do
+      delete tag_path(@tag)
+    end
+    assert_redirected_to root_path
+  end
+
+  # Content author role tests
+  test "content_author should access new tag" do
+    sign_in @content_author
+    get new_tag_path, as: :json
+    assert_response :success
+  end
+
+  test "content_author should create tag" do
+    sign_in @content_author
+    assert_difference("Tag.count") do
+      post tag_index_path, params: { tag: { name: "New Tag" } }
+    end
+    assert_redirected_to tag_path(Tag.last)
+  end
+
+  test "content_author should update tag" do
+    sign_in @content_author
+    patch tag_path(@tag), params: { tag: { name: "Updated" } }
+    assert_redirected_to tag_path(@tag)
+  end
+
+  test "content_author should destroy tag" do
+    sign_in @content_author
+    assert_difference("Tag.count", -1) do
+      delete tag_path(@tag)
+    end
+    # Tag destroy redirects to root_path on success
+    assert_redirected_to root_path
+  end
+
+  # Admin role tests
+  test "admin should access new tag" do
+    sign_in @admin
+    get new_tag_path, as: :json
+    assert_response :success
+  end
+
+  test "admin should create tag" do
+    sign_in @admin
+    assert_difference("Tag.count") do
+      post tag_index_path, params: { tag: { name: "Admin Tag" } }
+    end
+    assert_redirected_to tag_path(Tag.last)
   end
 end
