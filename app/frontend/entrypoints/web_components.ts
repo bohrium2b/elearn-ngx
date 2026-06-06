@@ -1,22 +1,29 @@
 /**
- * web_components.ts – Islands Architecture bootstrapper
+ * web_components.ts – Islands Architecture bootstrapper (Lazy Loading)
  *
  * This entrypoint:
  *  1. Scans `app/frontend/components/islands/` for files matching
  *     `*-island.tsx` (or `*-island.ts`).
- *  2. For each file it calls `registerIsland(tagName, Component)`, which
+ *  2. For each file it calls `registerIsland(tagName, loader)`, which
  *     registers a native HTML5 Custom Element (Web Component) that:
+ *       - Lazily loads the component on first `connectedCallback()`
  *       - Creates a React root inside `connectedCallback()`.
  *       - Parses the element's `data-props` attribute as JSON props.
  *       - Wraps the component in MUI's ThemeProvider.
  *       - Calls `root.unmount()` in `disconnectedCallback()` for clean
  *         Turbo Drive compatibility (no memory leaks on page transitions).
+ *
+ * MEMORY OPTIMIZATION:
+ * Uses lazy loading via `import.meta.glob` without `eager: true`.
+ * Islands are only loaded when first encountered in the DOM, reducing
+ * initial bundle size and memory usage significantly.
  */
 
 import React from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { ThemeProvider, createTheme, CssBaseline } from "@mui/material";
-import workspaceTheme from "./theme"; // Import the MUI theme from the entrypoints directory
+import { workspaceLightTheme } from "./theme";
+import { ThemeProviderWrapper } from "../context/ThemeContext";
 import type { ComponentType } from "react";
 
 // ── Default MUI theme (override in your own ThemeProvider if desired) ─────────
@@ -25,27 +32,68 @@ const defaultTheme = createTheme();
 // ── Symbolic constant for the internal React root stored on each element ──────
 const REACT_ROOT = Symbol("reactRoot");
 
+// ── Type for island module ───────────────────────────────────────────────────
+type IslandModule = {
+  default: ComponentType<Record<string, unknown>>;
+  tagName: string;
+};
+
+// ── Lazy module loader map ───────────────────────────────────────────────────
+// This creates a map of file paths to lazy import functions.
+// Modules are NOT loaded until explicitly called.
+const islandLoaders = import.meta.glob<IslandModule>(
+  "../components/islands/*.{ts,tsx}",
+  { eager: false }, // LAZY LOAD - modules loaded on demand
+);
+
+// ── Reverse lookup: tagName -> loader function ────────────────────────────────
+const tagNameToLoader = new Map<string, () => Promise<IslandModule>>();
+
+// Build the reverse lookup map at startup (just mapping, no module loading)
+for (const [path, loader] of Object.entries(islandLoaders)) {
+  // Extract potential tag name from filename (e.g., "hello-island.tsx" -> "hello-island")
+  const filename = path.split("/").pop() ?? "";
+  const tagName = filename.replace(/\.(ts|tsx)$/, "");
+
+  if (tagName && tagName.includes("-")) {
+    tagNameToLoader.set(tagName, loader as () => Promise<IslandModule>);
+    console.debug(`[Islands] Registered lazy loader for <${tagName}>`);
+  }
+}
+
 /**
- * BaseIslandElement
+ * LazyIslandElement
  *
- * A generic Custom Element base class that mounts any React component
- * and pipes the element's `data-props` JSON attribute into it as props.
- *
- * Subclasses only need to override `component` to return their TSX component.
+ * A Custom Element that lazily loads its React component on first mount.
+ * This significantly reduces initial memory usage by deferring loading
+ * of heavy dependencies (like Perseus) until actually needed.
  */
-abstract class BaseIslandElement extends HTMLElement {
+class LazyIslandElement extends HTMLElement {
   /** React root attached to this element. */
   private [REACT_ROOT]: Root | null = null;
 
   /** Captured initial child HTML (captured before React mounts). */
   private initialInnerHTML: string | null = null;
 
-  /** Override in subclasses to provide the React component to render. */
-  protected abstract get component(): ComponentType<Record<string, unknown>>;
+  /** The loaded React component (null until loaded). */
+  private _component: ComponentType<Record<string, unknown>> | null = null;
+
+  /** Loading state to prevent duplicate loads. */
+  private _loading: boolean = false;
+
+  /** Error state. */
+  private _error: Error | null = null;
 
   /** Observed attributes – re-render whenever `data-props` changes. */
   static get observedAttributes(): string[] {
     return ["data-props"];
+  }
+
+  /**
+   * Get the tag name for this element instance.
+   */
+  private get islandTagName(): string {
+    return this.tagName.toLowerCase();
   }
 
   /**
@@ -65,15 +113,53 @@ abstract class BaseIslandElement extends HTMLElement {
         return parsed as Record<string, unknown>;
       }
       console.warn(
-        `[Islands] data-props on <${this.tagName.toLowerCase()}> must be a JSON object.`,
+        `[Islands] data-props on <${this.islandTagName}> must be a JSON object.`,
       );
       return {};
     } catch {
       console.error(
-        `[Islands] Failed to parse data-props on <${this.tagName.toLowerCase()}>`,
+        `[Islands] Failed to parse data-props on <${this.islandTagName}>`,
         raw,
       );
       return {};
+    }
+  }
+
+  /**
+   * Lazily load the island module.
+   */
+  private async loadComponent(): Promise<void> {
+    if (this._component || this._loading) return;
+
+    const loader = tagNameToLoader.get(this.islandTagName);
+    if (!loader) {
+      this._error = new Error(
+        `No loader found for <${this.islandTagName}>. ` +
+        `Available islands: ${Array.from(tagNameToLoader.keys()).join(", ")}`
+      );
+      console.error(`[Islands] ${this._error.message}`);
+      return;
+    }
+
+    this._loading = true;
+    try {
+      const module = await loader();
+      const { default: Component } = module;
+
+      if (!Component) {
+        throw new Error(`Module for <${this.islandTagName}> has no default export`);
+      }
+
+      this._component = Component;
+      this._loading = false;
+      console.debug(`[Islands] Lazy loaded <${this.islandTagName}>`);
+
+      // Re-render now that component is loaded
+      this.render();
+    } catch (err) {
+      this._loading = false;
+      this._error = err instanceof Error ? err : new Error(String(err));
+      console.error(`[Islands] Failed to load <${this.islandTagName}>:`, err);
     }
   }
 
@@ -81,7 +167,47 @@ abstract class BaseIslandElement extends HTMLElement {
   private render(): void {
     if (!this[REACT_ROOT]) return;
 
-    const Component = this.component;
+    // If still loading, show loading state
+    if (this._loading) {
+      this[REACT_ROOT].render(
+        React.createElement(
+          ThemeProvider,
+          { theme: workspaceLightTheme || defaultTheme },
+          React.createElement(CssBaseline, null),
+          React.createElement(
+            "div",
+            { style: { padding: "1rem", opacity: 0.6 } },
+            "Loading..."
+          ),
+        ),
+      );
+      return;
+    }
+
+    // If error, show error state
+    if (this._error) {
+      this[REACT_ROOT].render(
+        React.createElement(
+          ThemeProvider,
+          { theme: workspaceLightTheme || defaultTheme },
+          React.createElement(CssBaseline, null),
+          React.createElement(
+            "div",
+            { style: { padding: "1rem", color: "red" } },
+            `Error loading island: ${this._error.message}`
+          ),
+        ),
+      );
+      return;
+    }
+
+    // If component not loaded yet, trigger load
+    if (!this._component) {
+      this.loadComponent();
+      return;
+    }
+
+    const Component = this._component;
     const props = this.parseProps();
 
     // If the element had child content prior to React mounting (e.g. server
@@ -97,10 +223,14 @@ abstract class BaseIslandElement extends HTMLElement {
 
     this[REACT_ROOT].render(
       React.createElement(
-        ThemeProvider,
-        { theme: workspaceTheme || defaultTheme },
-        React.createElement(CssBaseline, null),
-        React.createElement(Component, props, childNode),
+        ThemeProviderWrapper,
+        null,
+        React.createElement(
+          ThemeProvider,
+          { theme: workspaceLightTheme || defaultTheme },
+          React.createElement(CssBaseline, null),
+          React.createElement(Component, props, childNode),
+        ),
       ),
     );
   }
@@ -117,7 +247,9 @@ abstract class BaseIslandElement extends HTMLElement {
 
     // Create the React root the first time this element is inserted into the DOM.
     this[REACT_ROOT] = createRoot(this);
-    this.render();
+
+    // Trigger lazy loading
+    this.loadComponent();
   }
 
   disconnectedCallback(): void {
@@ -140,67 +272,48 @@ abstract class BaseIslandElement extends HTMLElement {
 }
 
 /**
- * registerIsland
+ * registerLazyIsland
  *
- * Utility to define a Custom Element from a React component.
+ * Utility to define a Custom Element with lazy loading.
+ * The component is NOT loaded until the element is first inserted into the DOM.
  *
  * @param tagName   Hyphenated element name, e.g. "hello-island".
- * @param Component The React component to mount inside the custom element.
  */
-function registerIsland(
-  tagName: string,
-  Component: ComponentType<Record<string, unknown>>,
-): void {
+function registerLazyIsland(tagName: string): void {
   if (customElements.get(tagName)) {
     // Already registered – skip (handles HMR re-evaluation)
     return;
   }
 
-  const IslandElement = class extends BaseIslandElement {
-    protected get component(): ComponentType<Record<string, unknown>> {
-      return Component;
+  // Create a unique subclass for each tag to avoid constructor sharing.
+  const IslandClass = class extends LazyIslandElement {
+    // The base class already implements all behavior; we only need a distinct
+    // constructor reference so the CustomElementRegistry treats each tag as a
+    // separate definition.
+    constructor() {
+      super();
     }
   };
 
-  customElements.define(tagName, IslandElement);
-  console.debug(`[Islands] Registered <${tagName}>`);
+  customElements.define(tagName, IslandClass);
+  console.debug(`[Islands] Registered lazy <${tagName}>`);
 }
 
-// ── Auto-discovery: scan islands/ directory ───────────────────────────────────
-//
-// Vite's `import.meta.glob` is evaluated at build-time and resolved into a
-// static map of `{ [filePath]: () => Promise<module> }`.
-//
+// ── Register all islands for lazy loading ─────────────────────────────────────
+// Vite's `import.meta.glob` with `eager: false` creates a map of lazy loaders.
+// We register custom elements for each island, but the actual modules are only
+// loaded when the element is first encountered in the DOM.
 // Convention: each file exports its React component as the **default** export
 // and its Custom Element tag name as a named export `tagName`.
-//
 // Example (hello-island.tsx):
 //   export const tagName = "hello-island";
 //   export default function HelloIsland(props) { … }
 
-type IslandModule = {
-  default: ComponentType<Record<string, unknown>>;
-  tagName: string;
-};
-
-const islandModules = import.meta.glob<IslandModule>(
-  "../components/islands/*.{ts,tsx}",
-  { eager: true },
-);
-
-for (const [path, module] of Object.entries(islandModules)) {
-  const { default: Component, tagName } = module;
-
-  if (!Component) {
-    console.warn(`[Islands] ${path} has no default export – skipping.`);
-    continue;
-  }
-  if (!tagName || !tagName.includes("-")) {
-    console.warn(
-      `[Islands] ${path} must export a 'tagName' string containing a hyphen – skipping.`,
-    );
-    continue;
-  }
-
-  registerIsland(tagName, Component);
+for (const tagName of tagNameToLoader.keys()) {
+  registerLazyIsland(tagName);
 }
+
+console.info(
+  `[Islands] Initialized lazy loading for ${tagNameToLoader.size} islands:`,
+  Array.from(tagNameToLoader.keys()).join(", ")
+);

@@ -20,12 +20,17 @@ gem "turbo-rails"
 # ── Redis (for Action Cable / caching) ────────────────────────────────────────
 # gem "redis", ">= 4.0.1"
 
-# ── Authentication ────────────────────────────────────────────────────────────
-# gem "devise"
+# ── Authentication & Authorization ───────────────────────────────────────────
+gem "devise", "~> 4.9"
+gem "pundit", "~> 2.3"
+gem "rolify", "~> 6.0"
 
 # ── Performance ───────────────────────────────────────────────────────────────
 gem "bootsnap", require: false
 gem "tzinfo-data", platforms: %i[windows jruby]
+
+# ── Asset Pipeline ─────────────────────────────────────────────────────────────
+gem "dartsass-rails"
 
 # ── Development & Test ────────────────────────────────────────────────────────
 group :development, :test do

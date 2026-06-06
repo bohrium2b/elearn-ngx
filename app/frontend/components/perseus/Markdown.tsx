@@ -6,8 +6,8 @@ import rehypeHighlight from "rehype-highlight";
 import rehypeRaw from "rehype-raw";
 import TeX from "./TeX";
 import "primer-markdown/build/build.css";
-import "@fontsource/noto-serif/index.css"; 
-import "@fontsource/roboto";
+import "@fontsource/noto-serif/index.css";
+import "@fontsource/inter/index.css";
 import "highlight.js/styles/github.css"; // Import a highlight.js theme
 import React, { useRef, useState, useEffect, memo } from "react";
 

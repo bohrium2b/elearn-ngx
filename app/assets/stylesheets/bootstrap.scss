@@ -1,0 +1,88 @@
+@import "../../../node_modules/bootstrap/scss/functions"; // Custom colors
+$primary: #2563eb;
+$secondary: #64748b;
+$success: #10b981;
+$warning: #f59e0b;
+$danger: #ef4444;
+$body-bg: #f8fafc;
+// Body text color
+$body-color: #0f172a;
+$font-family-base: "Inter", sans-serif;
+$h1-font-size: 2.5rem;
+$h2-font-size: 2rem;
+$h3-font-size: 1.75rem;
+$h4-font-size: 1.75rem;
+$h5-font-size: 1.5rem;
+$h6-font-size: 1.125rem;
+// Bootstrap custom override styles
+@import "../../../node_modules/bootstrap/scss/bootstrap";
+
+h1 {
+  font-weight: 600;
+}
+
+h2 {
+  font-weight: 600;
+}
+
+
+.btn-primary {
+  // Primary button - not fully colored in, just outline
+  background-color: transparent;
+  border-color: $primary;
+  color: $primary;
+  font-weight: 600;
+}
+
+// Dark mode styles
+[data-theme="dark"] {
+  --bs-body-bg: #0f172a;
+  --bs-body-color: #f1f5f9;
+  --bs-primary: #3b82f6;
+  --bs-secondary: #94a3b8;
+  --bs-success: #34d399;
+  --bs-warning: #fbbf24;
+  --bs-danger: #f87171;
+}
+
+[data-theme="dark"] body {
+  background-color: #0f172a;
+  color: #f1f5f9;
+}
+
+[data-theme="dark"] .main-content {
+  background-color: #0f172a;
+  min-height: 100vh;
+}
+
+// Dark mode for cards and papers
+[data-theme="dark"] .card,
+[data-theme="dark"] .MuiPaper-root {
+  background-color: #1e293b;
+  color: #f1f5f9;
+}
+
+// Dark mode for forms
+[data-theme="dark"] .form-control {
+  background-color: #1e293b;
+  border-color: #334155;
+  color: #f1f5f9;
+}
+
+[data-theme="dark"] .form-control:focus {
+  background-color: #1e293b;
+  color: #f1f5f9;
+}
+
+// Dark mode for tables
+[data-theme="dark"] .table {
+  --bs-table-bg: #1e293b;
+  --bs-table-color: #f1f5f9;
+  --bs-table-border-color: #334155;
+}
+
+// Dark mode for alerts
+[data-theme="dark"] .alert-warning {
+  background-color: #f59e0b;
+  color: #0f172a;
+}

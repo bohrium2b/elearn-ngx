@@ -21,7 +21,8 @@ const controllers = import.meta.glob<{ default: unknown }>(
 registerControllers(stimulusApp, controllers);
 
 // ── Global CSS (optional) ───────────────────────────────────────────────────────
-
+import "@fontsource/inter/index.css";
+import "@fontsource/noto-serif/index.css";
 import "bootstrap/dist/css/bootstrap.min.css";
 // import "@/styles/application.css";
 

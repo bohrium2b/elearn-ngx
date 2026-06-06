@@ -14,7 +14,6 @@ export const tagName = "interactive-player";
 interface InteractivePlayerProps {
   exerciseId: string;
   title: string;
-  totalQuestions: number;
 }
 
 interface ResolvedQuestion {
@@ -32,8 +31,7 @@ interface QuestionResult {
 
 export default function InteractivePlayer({
   exerciseId,
-  title,
-  totalQuestions
+  title
 }: InteractivePlayerProps) {
   const [questions, setQuestions] = React.useState<ResolvedQuestion[]>([]);
   const [currentIndex, setCurrentIndex] = React.useState(0);

@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import type { PerseusItem } from "@khanacademy/perseus-core";
 import { PerseusRenderer } from "./PerseusRenderer";
 import type { MultiChoiceQuestion } from "./types";

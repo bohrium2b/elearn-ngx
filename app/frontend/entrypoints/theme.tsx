@@ -1,47 +1,90 @@
 import { createTheme } from "@mui/material/styles";
 import type { ThemeOptions } from "@mui/material/styles";
 
-export const workspaceThemeOptions: ThemeOptions = {
-  palette: {
-    mode: "light",
-    primary: {
-      main: "#2563eb",      // Professional blue
-      light: "#60a5fa",
-      dark: "#1d4ed8",
-      contrastText: "#ffffff",
-    },
-    secondary: {
-      main: "#64748b",      // Slate gray
-      light: "#94a3b8",
-      dark: "#475569",
-    },
-    success: {
-      main: "#10b981",      // Emerald
-      light: "#34d399",
-      dark: "#059669",
-    },
-    warning: {
-      main: "#f59e0b",      // Amber
-      light: "#fbbf24",
-      dark: "#d97706",
-    },
-    error: {
-      main: "#ef4444",      // Red
-      light: "#f87171",
-      dark: "#dc2626",
-    },
-    background: {
-      default: "#f8fafc",   // Light slate background (replaces #f7f3ed)
-      paper: "#ffffff",
-    },
-    text: {
-      primary: "#0f172a",   // Slate 900
-      secondary: "#475569", // Slate 600
-    },
-    divider: "#e2e8f0",     // Slate 200
+// Light theme palette
+const lightPalette = {
+  mode: "light" as const,
+  primary: {
+    main: "#2563eb",      // Professional blue
+    light: "#60a5fa",
+    dark: "#1d4ed8",
+    contrastText: "#ffffff",
   },
+  secondary: {
+    main: "#64748b",      // Slate gray
+    light: "#94a3b8",
+    dark: "#475569",
+  },
+  success: {
+    main: "#10b981",      // Emerald
+    light: "#34d399",
+    dark: "#059669",
+  },
+  warning: {
+    main: "#f59e0b",      // Amber
+    light: "#fbbf24",
+    dark: "#d97706",
+  },
+  error: {
+    main: "#ef4444",      // Red
+    light: "#f87171",
+    dark: "#dc2626",
+  },
+  background: {
+    default: "#f8fafc",   // Light slate background
+    paper: "#ffffff",
+  },
+  text: {
+    primary: "#0f172a",   // Slate 900
+    secondary: "#475569", // Slate 600
+  },
+  divider: "#e2e8f0",     // Slate 200
+};
+
+// Dark theme palette
+const darkPalette = {
+  mode: "dark" as const,
+  primary: {
+    main: "#3b82f6",      // Lighter blue for dark mode
+    light: "#60a5fa",
+    dark: "#2563eb",
+    contrastText: "#ffffff",
+  },
+  secondary: {
+    main: "#94a3b8",      // Lighter slate for dark mode
+    light: "#cbd5e1",
+    dark: "#64748b",
+  },
+  success: {
+    main: "#34d399",      // Lighter emerald
+    light: "#6ee7b7",
+    dark: "#10b981",
+  },
+  warning: {
+    main: "#fbbf24",      // Lighter amber
+    light: "#fde68a",
+    dark: "#f59e0b",
+  },
+  error: {
+    main: "#f87171",      // Lighter red
+    light: "#fca5a5",
+    dark: "#ef4444",
+  },
+  background: {
+    default: "#0f172a",   // Dark slate background
+    paper: "#1e293b",    // Slightly lighter for cards
+  },
+  text: {
+    primary: "#f1f5f9",   // Light text
+    secondary: "#cbd5e1", // Lighter secondary text
+  },
+  divider: "#334155",     // Darker divider
+};
+
+// Common theme options shared between light and dark
+const commonThemeOptions: Omit<ThemeOptions, "palette"> = {
   typography: {
-    fontFamily: '"Inter", "Roboto", "Helvetica", "Arial", sans-serif',
+    fontFamily: '"Roboto", "Helvetica", "Arial", sans-serif',
     h4: {
       fontWeight: 700,
       fontSize: "1.75rem",
@@ -209,5 +252,23 @@ export const workspaceThemeOptions: ThemeOptions = {
   },
 };
 
-export const workspaceTheme = createTheme(workspaceThemeOptions);
+// Create theme options for a specific mode
+function createWorkspaceThemeOptions(mode: "light" | "dark"): ThemeOptions {
+  return {
+    ...commonThemeOptions,
+    palette: mode === "light" ? lightPalette : darkPalette,
+  };
+}
+
+// Create themes for both modes
+export const workspaceLightTheme = createTheme(createWorkspaceThemeOptions("light"));
+export const workspaceDarkTheme = createTheme(createWorkspaceThemeOptions("dark"));
+
+// Default export for backward compatibility (light theme)
+export const workspaceTheme = workspaceLightTheme;
 export default workspaceTheme;
+
+// Helper to get theme by mode
+export function getThemeByMode(mode: "light" | "dark") {
+  return mode === "light" ? workspaceLightTheme : workspaceDarkTheme;
+}

@@ -14,6 +14,8 @@
  *= require_self
  */
 
+@import "./bootstrap.scss";
+
 :root {
   --bs-body-bg: #f8fafc;
 }

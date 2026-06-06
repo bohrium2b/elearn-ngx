@@ -451,7 +451,7 @@ export const WorkspaceDashboard: React.FC<WorkspaceProps> = ({
                             onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
                             sx={{
                                 position: "sticky",
-                                top: 16,
+                                top: 90,
                                 left: 16,
                                 zIndex: 1000,
                                 bgcolor: "background.paper",
@@ -491,6 +491,7 @@ export const WorkspaceDashboard: React.FC<WorkspaceProps> = ({
                                     position: "sticky",
                                     top: 24,
                                     maxHeight: "calc(100vh - 48px)",
+                                    animation: "fadeIn 0.3s ease-in-out"
                                 }}
                             >
                                 {/* Sidebar Header with Collapse Button */}
