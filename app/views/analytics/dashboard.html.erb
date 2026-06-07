@@ -1,0 +1,7 @@
+<% content_for :title, "Analytics Dashboard" %>
+
+<div class="container mx-auto px-4 py-8">
+  <%= react_island_tag("student-analytics", {
+    csrfToken: form_authenticity_token
+  }) %>
+</div>
