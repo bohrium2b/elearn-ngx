@@ -4,7 +4,10 @@ class User < ApplicationRecord
   # Devise modules
   devise :database_authenticatable, :registerable,
          :recoverable, :rememberable, :validatable,
-         :trackable, :timeoutable
+         :trackable
+
+  # Associations
+  has_many :assessment_sessions, dependent: :destroy
 
   # Validations
   validates :username, presence: true, uniqueness: true,

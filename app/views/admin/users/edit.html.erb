@@ -1,0 +1,52 @@
+<div class="container mx-auto px-4 py-8">
+  <div class="max-w-2xl mx-auto">
+    <h1 class="text-2xl font-bold mb-6">Edit User: <%= @user.username %></h1>
+
+    <div class="card bg-white shadow-xl">
+      <div class="card-body">
+        <%= form_with(model: [:admin, @user], local: true) do |f| %>
+          <% if @user.errors.any? %>
+            <div class="alert alert-error mb-4">
+              <ul>
+                <% @user.errors.full_messages.each do |message| %>
+                  <li><%= message %></li>
+                <% end %>
+              </ul>
+            </div>
+          <% end %>
+
+          <div class="form-control mb-4">
+            <label class="label">
+              <span class="label-text">Username</span>
+            </label>
+            <%= f.text_field :username, class: "input input-bordered" %>
+          </div>
+
+          <div class="form-control mb-4">
+            <label class="label">
+              <span class="label-text">Email</span>
+            </label>
+            <%= f.email_field :email, class: "input input-bordered" %>
+          </div>
+
+          <div class="form-control mb-4">
+            <label class="label">
+              <span class="label-text">Role</span>
+            </label>
+            <select name="user[role_ids][]" class="select select-bordered w-full">
+              <option value="1" <%= "selected" if @user.student? %>>Student</option>
+              <option value="2" <%= "selected" if @user.content_author? %>>Content Author</option>
+              <option value="3" <%= "selected" if @user.instructor? %>>Instructor</option>
+              <option value="4" <%= "selected" if @user.admin? %>>Admin</option>
+            </select>
+          </div>
+
+          <div class="card-actions justify-end">
+            <a href="<%= admin_users_path %>" class="btn btn-secondary">Cancel</a>
+            <%= f.submit "Update User", class: "btn btn-primary" %>
+          </div>
+        <% end %>
+      </div>
+    </div>
+  </div>
+</div>
