@@ -116,14 +116,16 @@ class StudentAnalytics
   end
 
   def calculate_streak
-    sessions = @user.assessment_sessions.recent.limit(30).to_a
-    return 0 if sessions.empty?
-
+    # Streak is defined as number of days in a row with a session score
+    sessions = @user.assessment_sessions
+                    .recent
+                    .where.not(score_percentage: nil)
+                    .group_by { |s| s.completed_at.to_date }
     streak = 0
-    sessions.each do |session|
-      break unless session.score_percentage.to_f >= 70.0
-
+    current_date = Date.current
+    while sessions.key?(current_date)
       streak += 1
+      current_date -= 1.day
     end
     streak
   end

@@ -1,0 +1,5 @@
+<% content_for :title, @course&.name || "Learning Pathway" %>
+
+<%= react_island_tag("course-pathway", {
+    courseId: @course&.path_identifier,
+}) %>

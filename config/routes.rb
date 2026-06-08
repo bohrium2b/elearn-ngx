@@ -48,6 +48,46 @@ Rails.application.routes.draw do
     resources :assessment_sessions, only: %i[index show create]
   end
 
+  # Taxonomy Nodes API - allow any character in :id to support UUID-x:slug format
+  resources :taxonomy_nodes, path: 'taxonomy', id: /[^\/]+/ do
+    member do
+      get :descendants
+      get :ancestors
+      get :questions
+    end
+    collection do
+      get :tree
+      get :by_level
+    end
+  end
+
+  # Content Assignments API
+  resources :content_assignments, only: [:create, :update, :destroy]
+
+  # Learning Pathways (Student-facing)
+  resources :learning_pathways, only: [:index, :show] do
+    member do
+      get :progress
+      post :start_topic
+      post :complete_topic
+    end
+  end
+
+  # Admin namespace
+  namespace :admin do
+    resources :users
+    resources :taxonomy_nodes, id: /[^\/]+/ do
+      member do
+        patch :reorder
+        patch :move
+      end
+      collection do
+        get :full_tree
+        get :assemble
+      end
+    end
+  end
+
   # Root
   root "home#index"
 

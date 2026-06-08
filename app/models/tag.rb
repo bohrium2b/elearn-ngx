@@ -4,6 +4,7 @@ class Tag < ApplicationRecord
   before_destroy :detach_questions
 
   belongs_to :parent, class_name: "Tag", optional: true
+  belongs_to :taxonomy_node, optional: true
   has_many :children, class_name: "Tag", foreign_key: "parent_id", dependent: :destroy, inverse_of: :parent
   has_and_belongs_to_many :questions
 
@@ -80,4 +81,3 @@ class Tag < ApplicationRecord
     questions.clear
   end
 end
-

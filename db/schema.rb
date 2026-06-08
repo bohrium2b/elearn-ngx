@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.2].define(version: 2026_06_07_222154) do
+ActiveRecord::Schema[7.2].define(version: 2026_06_08_050609) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pgcrypto"
   enable_extension "plpgsql"
@@ -31,6 +31,18 @@ ActiveRecord::Schema[7.2].define(version: 2026_06_07_222154) do
     t.index ["user_id", "exercise_id"], name: "index_assessment_sessions_on_user_id_and_exercise_id"
     t.index ["user_id"], name: "index_assessment_sessions_on_user_id"
     t.index ["uuid"], name: "index_assessment_sessions_on_uuid", unique: true
+  end
+
+  create_table "content_assignments", force: :cascade do |t|
+    t.bigint "taxonomy_node_id", null: false
+    t.bigint "question_id", null: false
+    t.integer "position", default: 0
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["question_id"], name: "index_content_assignments_on_question_id"
+    t.index ["taxonomy_node_id", "position"], name: "index_content_assignments_on_taxonomy_node_id_and_position"
+    t.index ["taxonomy_node_id", "question_id"], name: "index_content_assignments_on_node_and_question", unique: true
+    t.index ["taxonomy_node_id"], name: "index_content_assignments_on_taxonomy_node_id"
   end
 
   create_table "exercises", force: :cascade do |t|
@@ -83,8 +95,31 @@ ActiveRecord::Schema[7.2].define(version: 2026_06_07_222154) do
     t.string "color", null: false
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.bigint "taxonomy_node_id"
     t.index ["parent_id"], name: "index_tags_on_parent_id"
+    t.index ["taxonomy_node_id"], name: "index_tags_on_taxonomy_node_id"
     t.index ["uuid"], name: "index_tags_on_uuid", unique: true
+  end
+
+  create_table "taxonomy_nodes", force: :cascade do |t|
+    t.string "name", null: false
+    t.string "slug", null: false
+    t.uuid "uuid", default: -> { "gen_random_uuid()" }, null: false
+    t.integer "level", default: 0, null: false
+    t.bigint "parent_id"
+    t.bigint "course_id"
+    t.integer "position", default: 0
+    t.jsonb "metadata", default: {}
+    t.text "description"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["course_id", "level", "position"], name: "index_taxonomy_nodes_on_course_id_and_level_and_position"
+    t.index ["course_id"], name: "index_taxonomy_nodes_on_course_id"
+    t.index ["level"], name: "index_taxonomy_nodes_on_level"
+    t.index ["parent_id", "position"], name: "index_taxonomy_nodes_on_parent_id_and_position"
+    t.index ["parent_id"], name: "index_taxonomy_nodes_on_parent_id"
+    t.index ["slug"], name: "index_taxonomy_nodes_on_slug", unique: true
+    t.index ["uuid"], name: "index_taxonomy_nodes_on_uuid", unique: true
   end
 
   create_table "users", force: :cascade do |t|
@@ -117,6 +152,11 @@ ActiveRecord::Schema[7.2].define(version: 2026_06_07_222154) do
 
   add_foreign_key "assessment_sessions", "exercises"
   add_foreign_key "assessment_sessions", "users"
+  add_foreign_key "content_assignments", "questions"
+  add_foreign_key "content_assignments", "taxonomy_nodes"
   add_foreign_key "tags", "tags", column: "parent_id"
+  add_foreign_key "tags", "taxonomy_nodes"
+  add_foreign_key "taxonomy_nodes", "taxonomy_nodes", column: "course_id"
+  add_foreign_key "taxonomy_nodes", "taxonomy_nodes", column: "parent_id"
   add_foreign_key "users_roles", "roles"
 end
