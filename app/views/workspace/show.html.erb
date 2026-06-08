@@ -9,7 +9,7 @@
       label: question.question_id_code.presence || question.slug || "Question #{question.id}",
       source_tag_id: nil
     } },
-    refreshPath: root_path,
+    refreshPath: workspace_path(@workspace),
     classifyPath: api_classify_question_path,
     csrfToken: form_authenticity_token
   }) %>

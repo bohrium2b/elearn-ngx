@@ -10,7 +10,10 @@ class QuestionsController < ApplicationController
 
   def show
     authorize @question
-    render json: serialize_question(@question)
+    respond_to do |format|
+      format.html {}
+      format.json { render json: serialize_question(@question) }
+    end
   end
 
   def new

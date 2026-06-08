@@ -97,12 +97,12 @@ describe('InteractivePlayer', () => {
   });
 
   it('shows loading state initially', () => {
-    render(React.createElement(InteractivePlayer, { exerciseId: 'ex-1', title: 'Test Exercise', totalQuestions: 3 }));
+    render(React.createElement(InteractivePlayer, { exerciseId: 'ex-1', title: 'Test Exercise' }));
     expect(screen.getByText('Loading exercise...')).toBeInTheDocument();
   });
 
   it('displays question 1 of 3 on initial render', async () => {
-    render(React.createElement(InteractivePlayer, { exerciseId: 'ex-1', title: 'Test Exercise', totalQuestions: 3 }));
+    render(React.createElement(InteractivePlayer, { exerciseId: 'ex-1', title: 'Test Exercise' }));
 
     await waitFor(() => {
       expect(screen.getByText('Question 1 of 3')).toBeInTheDocument();
@@ -111,7 +111,7 @@ describe('InteractivePlayer', () => {
   });
 
   it('advances to next question when Next is clicked', async () => {
-    render(React.createElement(InteractivePlayer, { exerciseId: 'ex-1', title: 'Test Exercise', totalQuestions: 3 }));
+    render(React.createElement(InteractivePlayer, { exerciseId: 'ex-1', title: 'Test Exercise' }));
 
     await waitFor(() => {
       expect(screen.getByText('Question 1 of 3')).toBeInTheDocument();
@@ -126,7 +126,7 @@ describe('InteractivePlayer', () => {
   });
 
   it('shows Submit All Answers button on last question', async () => {
-    render(React.createElement(InteractivePlayer, { exerciseId: 'ex-1', title: 'Test Exercise', totalQuestions: 3 }));
+    render(React.createElement(InteractivePlayer, { exerciseId: 'ex-1', title: 'Test Exercise' }));
 
     await waitFor(() => {
       expect(screen.getByText('Question 1 of 3')).toBeInTheDocument();
@@ -146,7 +146,7 @@ describe('InteractivePlayer', () => {
   });
 
   it('enables Back button after navigating forward', async () => {
-    render(React.createElement(InteractivePlayer, { exerciseId: 'ex-1', title: 'Test Exercise', totalQuestions: 3 }));
+    render(React.createElement(InteractivePlayer, { exerciseId: 'ex-1', title: 'Test Exercise' }));
 
     await waitFor(() => {
       expect(screen.getByText('Question 1 of 3')).toBeInTheDocument();
@@ -168,7 +168,7 @@ describe('InteractivePlayer', () => {
       json: () => Promise.resolve({ title: 'Empty', questions: [] }),
     });
 
-    render(React.createElement(InteractivePlayer, { exerciseId: 'ex-empty', title: 'Empty Exercise', totalQuestions: 0 }));
+    render(React.createElement(InteractivePlayer, { exerciseId: 'ex-empty', title: 'Empty Exercise' }));
 
     await waitFor(() => {
       expect(screen.getByText('No questions available for this exercise.')).toBeInTheDocument();
@@ -178,7 +178,7 @@ describe('InteractivePlayer', () => {
   it('shows all questions after submitting', async () => {
     mockGetScore = () => 1;
 
-    render(React.createElement(InteractivePlayer, { exerciseId: 'ex-1', title: 'Test Exercise', totalQuestions: 3 }));
+    render(React.createElement(InteractivePlayer, { exerciseId: 'ex-1', title: 'Test Exercise' }));
 
     await waitFor(() => {
       expect(screen.getByText('Question 1 of 3')).toBeInTheDocument();
@@ -209,7 +209,7 @@ describe('InteractivePlayer', () => {
   it('shows results after submitting all answers', async () => {
     mockGetScore = () => 1;
 
-    render(React.createElement(InteractivePlayer, { exerciseId: 'ex-1', title: 'Test Exercise', totalQuestions: 3 }));
+    render(React.createElement(InteractivePlayer, { exerciseId: 'ex-1', title: 'Test Exercise' }));
 
     await waitFor(() => {
       expect(screen.getByText('Question 1 of 3')).toBeInTheDocument();
@@ -238,7 +238,7 @@ describe('InteractivePlayer', () => {
   it('shows correct/incorrect chips for each question after submit', async () => {
     mockGetScore = () => 1;
 
-    render(React.createElement(InteractivePlayer, { exerciseId: 'ex-1', title: 'Test Exercise', totalQuestions: 3 }));
+    render(React.createElement(InteractivePlayer, { exerciseId: 'ex-1', title: 'Test Exercise' }));
 
     await waitFor(() => {
       expect(screen.getByText('Question 1 of 3')).toBeInTheDocument();
@@ -266,7 +266,7 @@ describe('InteractivePlayer', () => {
   it('shows Try Again button after submitting', async () => {
     mockGetScore = () => 1;
 
-    render(React.createElement(InteractivePlayer, { exerciseId: 'ex-1', title: 'Test Exercise', totalQuestions: 3 }));
+    render(React.createElement(InteractivePlayer, { exerciseId: 'ex-1', title: 'Test Exercise' }));
 
     await waitFor(() => {
       expect(screen.getByText('Question 1 of 3')).toBeInTheDocument();
@@ -292,7 +292,7 @@ describe('InteractivePlayer', () => {
   });
 
   it('navigates back to previous question', async () => {
-    render(React.createElement(InteractivePlayer, { exerciseId: 'ex-1', title: 'Test Exercise', totalQuestions: 3 }));
+    render(React.createElement(InteractivePlayer, { exerciseId: 'ex-1', title: 'Test Exercise' }));
 
     await waitFor(() => {
       expect(screen.getByText('Question 1 of 3')).toBeInTheDocument();

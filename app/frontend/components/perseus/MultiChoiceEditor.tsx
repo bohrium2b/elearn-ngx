@@ -405,24 +405,23 @@ const MarkdownEditor = (props: {
   ariaLabel?: string;
 }) => {
   return (
-    <MDEditor
-      value={props.value}
-      onChange={(value) => props.onChange(value ?? "")}
-      height={100}
-      textareaProps={{
-        placeholder: props.placeholder || "Enter text here...",
-        "aria-label": props.ariaLabel || props.placeholder || "Markdown editor",
-      }}
-      // @ts-ignore
-      previewOptions={{
-        // enable parsing of $...$ and $$...$$
-        // @ts-ignore
-        remarkPlugins: [remarkMath, remarkGfm],
-        // render math with KaTeX
-        // @ts-ignore
-        rehypePlugins: [rehypeKatex],
-      }}
-    />
+    <Box data-color-mode="light">
+      <MDEditor
+        value={props.value}
+        onChange={(value) => props.onChange(value ?? "")}
+        height={100}
+        textareaProps={{
+          placeholder: props.placeholder || "Enter text here...",
+          "aria-label": props.ariaLabel || props.placeholder || "Markdown editor",
+        }}
+        previewOptions={{
+          // enable parsing of $...$ and $$...$$
+          remarkPlugins: [remarkMath, remarkGfm],
+          // render math with KaTeX
+          rehypePlugins: [rehypeKatex],
+        }}
+      />
+    </Box>
   );
 };
 export default MultiChoiceEditorMemo;

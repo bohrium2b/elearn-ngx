@@ -1,9 +1,8 @@
 <div class="container mx-auto px-4 py-8">
   <interactive-player 
     data-props="<%= { 
-      exerciseId: @exercise.id,
-      title: @exercise.title,
-      totalQuestions: @resolved_questions.length
+      exerciseId: @exercise.uuid,
+      title: @exercise.title
     }.to_json %>"
   ></interactive-player>
 </div>

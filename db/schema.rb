@@ -10,16 +10,40 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.2].define(version: 2026_06_05_052648) do
+ActiveRecord::Schema[7.2].define(version: 2026_06_07_222154) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pgcrypto"
   enable_extension "plpgsql"
+
+  create_table "assessment_sessions", force: :cascade do |t|
+    t.bigint "user_id", null: false
+    t.bigint "exercise_id", null: false
+    t.decimal "score_percentage", precision: 5, scale: 2
+    t.integer "duration_seconds"
+    t.datetime "completed_at", null: false
+    t.jsonb "telemetry_data", default: {}, null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.uuid "uuid", default: -> { "gen_random_uuid()" }, null: false
+    t.index ["completed_at"], name: "index_assessment_sessions_on_completed_at"
+    t.index ["exercise_id"], name: "index_assessment_sessions_on_exercise_id"
+    t.index ["telemetry_data"], name: "index_assessment_sessions_on_telemetry_data", using: :gin
+    t.index ["user_id", "exercise_id"], name: "index_assessment_sessions_on_user_id_and_exercise_id"
+    t.index ["user_id"], name: "index_assessment_sessions_on_user_id"
+    t.index ["uuid"], name: "index_assessment_sessions_on_uuid", unique: true
+  end
 
   create_table "exercises", force: :cascade do |t|
     t.string "title"
     t.jsonb "spec"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.uuid "uuid", default: -> { "gen_random_uuid()" }, null: false
+    t.string "slug"
+    t.boolean "is_practice", default: false, null: false
+    t.index ["is_practice"], name: "index_exercises_on_is_practice"
+    t.index ["slug"], name: "index_exercises_on_slug", unique: true
+    t.index ["uuid"], name: "index_exercises_on_uuid", unique: true
   end
 
   create_table "questions", force: :cascade do |t|
@@ -91,6 +115,8 @@ ActiveRecord::Schema[7.2].define(version: 2026_06_05_052648) do
     t.index ["user_id"], name: "index_users_roles_on_user_id"
   end
 
+  add_foreign_key "assessment_sessions", "exercises"
+  add_foreign_key "assessment_sessions", "users"
   add_foreign_key "tags", "tags", column: "parent_id"
   add_foreign_key "users_roles", "roles"
 end

@@ -34,7 +34,8 @@ class PracticeExerciseGenerator
 
     Exercise.create!(
       title: exercise_data[:title],
-      spec: exercise_data[:spec]
+      spec: exercise_data[:spec],
+      is_practice: true
     )
   end
 

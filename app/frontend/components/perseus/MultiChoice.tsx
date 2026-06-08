@@ -20,6 +20,8 @@ export type MultiChoiceChoice = {
 
 export type MultiChoiceRef = {
   getScore: () => number | null;
+  getSelectedChoices: () => number[];
+  getHintsUsed: () => number;
   getSerializedState: () => any;
   setSerializedState: (state: any) => void;
 };
@@ -39,24 +41,53 @@ export const MultiChoice = React.forwardRef<MultiChoiceRef, MultiChoiceProps>(
     }: MultiChoiceProps,
     ref,
   ) => {
-    /* This component renders a multiple-choice question using the PerseusRenderer.
-     * It accepts a question string, an array of choices, optional hints, a question ID,
-     * and a callback function to handle score changes.
-     * The component uses the PerseusRenderer to render the question and choices.
-     */
     const rendererRef = React.useRef<any>(null);
+    const hintsUsedRef = React.useRef(0);
 
-    // Expose the getScore and state management methods to the parent component
+    // Expose methods to parent component
     React.useImperativeHandle(ref, () => ({
-      getScore: getScore,
+      getScore: () => rendererRef.current?.getScore() ?? null,
+      getSelectedChoices: () => {
+        const renderer = rendererRef.current;
+        if (!renderer) return [];
+        
+        // Get user input from the renderer using serialized state
+        const serializedState = renderer.getSerializedState?.();
+        if (!serializedState?.question) return [];
+
+        // Extract selected choice indices from the radio widget state
+        const selectedIndices: number[] = [];
+        
+        // The serialized state contains widget IDs mapped to their state
+        // For radio widgets, we need to find which choices are selected
+        Object.keys(serializedState.question).forEach((widgetId) => {
+          const widgetState = serializedState.question[widgetId];
+          if (widgetState && typeof widgetState === 'object') {
+            // Check for selected choices in the widget state
+            // The structure depends on the Perseus radio widget
+            const selectedIds = widgetState.selectedChoiceIds || widgetState.choices?.filter((c: any) => c.selected).map((c: any) => c.id) || [];
+            
+            if (Array.isArray(selectedIds)) {
+              selectedIds.forEach((id: string) => {
+                const index = choices.findIndex(
+                  (choice, idx) => choice.id === id || `radio-choice-${idx + 1}` === id
+                );
+                if (index !== -1 && !selectedIndices.includes(index)) {
+                  selectedIndices.push(index);
+                }
+              });
+            }
+          }
+        });
+
+        return selectedIndices;
+      },
+      getHintsUsed: () => hintsUsedRef.current,
       getSerializedState: () => rendererRef.current?.getSerializedState(),
       setSerializedState: (state: any) => rendererRef.current?.setSerializedState(state),
     }));
 
-    const getScore = React.useCallback(() => {
-      return rendererRef.current?.getScore() ?? null;
-    }, []);
-    // Template for perseusitem
+    // Template for perseus item
     const item: PerseusItem = {
       question: {
         content: "[[☃ radio 1]]",
@@ -87,7 +118,19 @@ export const MultiChoice = React.forwardRef<MultiChoiceRef, MultiChoiceProps>(
         periodicTableWithKey: false,
       },
     };
-    // Render a perseusrenderer for abstraction
+
+    // Track hints used via PerseusRenderer's hintsIndex
+    const handleScoreChange = React.useCallback((score: number) => {
+      // Update hints used count based on renderer state
+      if (rendererRef.current) {
+        const hintsIndex = rendererRef.current.getHintsIndex?.() ?? -1;
+        if (hintsIndex >= 0) {
+          hintsUsedRef.current = hintsIndex + 1;
+        }
+      }
+      onScoreChange?.(score);
+    }, [onScoreChange]);
+
     return (
       <>
         <PerseusRenderer
@@ -96,7 +139,7 @@ export const MultiChoice = React.forwardRef<MultiChoiceRef, MultiChoiceProps>(
           item={item}
           hints={hints}
           questionId={questionId ?? ""}
-          onScoreChange={onScoreChange ?? (() => { })}
+          onScoreChange={handleScoreChange}
           reviewMode={reviewMode}
           showHintsUI={showHintsUI}
           numberOfHintsToShow={numberOfHintsToShow ?? 0}

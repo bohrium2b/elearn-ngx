@@ -22,6 +22,7 @@ import { IconButton } from "@mui/material";
 import { Brightness4, Brightness7 } from "@mui/icons-material";
 import { useDarkMode } from "../../context/ThemeContext";
 import "./app-navigation.css";
+import { styled } from "@mui/material/styles";
 
 // ── Island tag name (must contain a hyphen per the Custom Elements spec) ──────
 export const tagName = "app-navigation";
@@ -57,6 +58,11 @@ export default function AppNavigation({
 }: AppNavigationProps) {
   const [userData, setUserData] = useState<UserData | null>(null);
   const { isDark, toggle } = useDarkMode();
+  const NavContainerNoPrint = styled("nav")({
+    "@media print": {
+      display: "none",
+    },
+  });
 
   useEffect(() => {
     // Try to read from data-props first (passed as JSON), then fall back to HTML attributes
@@ -92,8 +98,6 @@ export default function AppNavigation({
         return [
           ...baseItems,
           { label: "Workspace", href: "/workspace", testId: "workspace-link" },
-          { label: "Questions", href: "/questions", testId: "nav-questions" },
-          { label: "Tags", href: "/tag", testId: "nav-tags" },
           { label: "Analytics", href: "/analytics", testId: "nav-analytics" },
           { label: "Users", href: "/admin/users", testId: "admin-link" },
         ];
@@ -106,12 +110,13 @@ export default function AppNavigation({
         return [
           ...baseItems,
           { label: "Workspace", href: "/workspace", testId: "workspace-link" },
-          { label: "Questions", href: "/questions", testId: "nav-questions" },
-          { label: "Tags", href: "/tag", testId: "nav-tags" },
         ];
       case "student":
       default:
-        return baseItems;
+        return [
+          ...baseItems,
+          { label: "My Analytics", href: "/analytics/dashboard", testId: "nav-analytics" },
+        ];
     }
   };
 
@@ -121,7 +126,7 @@ export default function AppNavigation({
     const navItems = getNavItems(userData.role);
 
     return (
-      <nav className="app-nav">
+      <NavContainerNoPrint className="app-nav">
         <div className="nav-container">
           <div className="nav-brand">
             <a href="/" className="nav-logo">E-Learn</a>
@@ -187,13 +192,13 @@ export default function AppNavigation({
             </div>
           </div>
         </div>
-      </nav>
+      </NavContainerNoPrint>
     );
   };
 
   const renderPublicNav = () => {
     return (
-      <nav className="app-nav">
+      <NavContainerNoPrint className="app-nav">
         <div className="nav-container">
           <div className="nav-brand">
             <a href="/" className="nav-logo">E-Learn</a>
@@ -220,7 +225,7 @@ export default function AppNavigation({
             <a href="/users/sign_up" className="btn btn-primary">Get Started</a>
           </div>
         </div>
-      </nav>
+      </NavContainerNoPrint>
     );
   };
 

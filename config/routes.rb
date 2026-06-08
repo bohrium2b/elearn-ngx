@@ -15,6 +15,9 @@ Rails.application.routes.draw do
     member do
       get "start"
     end
+    collection do
+      get "practice"
+    end
   end
   resources :tag
 
@@ -27,12 +30,22 @@ Rails.application.routes.draw do
   resources :analytics, only: [:index] do
     collection do
       get :performance_logs
+      get :dashboard
+      get :weak_points
+      get :recommendations
+      get :cohort
+      get :tag_matrix
+      get :item_discrimination
+    end
+    member do
+      get :review
     end
   end
 
   # API routes
   namespace :api do
     patch "classify_question", to: "classify_questions#update"
+    resources :assessment_sessions, only: %i[index show create]
   end
 
   # Root

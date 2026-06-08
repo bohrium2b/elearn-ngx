@@ -1,8 +1,66 @@
 class Exercise < ApplicationRecord
+  before_validation :ensure_uuid, on: :create
+  before_validation :generate_slug, on: :create
+
   validates :title, presence: true
+  validates :slug, presence: true, uniqueness: true
   validate :spec_structure
   validate :over_selection_boundary_guard
   validate :exclusive_family_overlap_guard
+
+  # Scope to exclude practice exercises from regular listings
+  scope :regular, -> { where(is_practice: false) }
+  scope :practice, -> { where(is_practice: true) }
+
+  # Find by UUID, slug, ID, or combined format (<uuid>-x:<slug>)
+  # Priority: combined format > UUID > numeric ID > slug
+  def self.find_by_uuid_or_slug_or_id(param)
+    return nil if param.blank?
+
+    # Check if it's a combined format: <uuid>-x:<slug> (e.g., "abc12345-...-1:exercise-algebra")
+    # This matches the format used by questions and tags
+    combined_match = param.match(/\A([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})-(\d+):(.+)\z/i)
+    if combined_match
+      find_by(uuid: combined_match[1])
+    # Check if it's a UUID format (8-4-4-4-12 hex format)
+    elsif param.match?(/\A[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\z/i)
+      find_by(uuid: param)
+    # Check if it's a numeric ID (digits only)
+    elsif param.match?(/\A\d+\z/)
+      find_by(id: param)
+    # Otherwise treat as slug
+    else
+      find_by(slug: param)
+    end
+  end
+
+  # Generate a URL-friendly slug from the title
+  def generate_slug
+    return if slug.present? || title.blank?
+
+    base_slug = title.parameterize
+    base_slug = "exercise-#{id}" if base_slug.blank?
+    
+    unique_slug = base_slug
+    counter = 1
+
+    # Ensure uniqueness
+    while Exercise.exists?(slug: unique_slug)
+      unique_slug = "#{base_slug}-#{counter}"
+      counter += 1
+    end
+
+    self.slug = unique_slug
+  end
+
+  # Update slug if title changes
+  def should_generate_new_slug?
+    title_changed? && slug.blank?
+  end
+
+  def practice?
+    is_practice == true
+  end
 
   private
 
@@ -91,5 +149,9 @@ class Exercise < ApplicationRecord
         end
       end
     end
+  end
+
+  def ensure_uuid
+    self.uuid ||= SecureRandom.uuid
   end
 end
