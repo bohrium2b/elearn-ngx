@@ -14,10 +14,7 @@ env:
   RUBY_VERSION: "3.3"
   NODE_VERSION: "20"
   RAILS_ENV: test
-  DATABASE_HOST: postgres
-  DATABASE_PORT: 5432
-  DATABASE_USER: postgres
-  DATABASE_PASSWORD: postgres
+  DATABASE_URL: "postgresql://postgres:postgres@localhost:5432/elearn_ngx_test"
 
 jobs:
   # ── Ruby / Rails linting & tests ──────────────────────────────────────────
@@ -29,13 +26,18 @@ jobs:
 
     services:
       postgres:
-        image: ghcr.io/cloudnative-pg/postgresql:16
+        image: postgres:16
         env:
           POSTGRES_USER: postgres
           POSTGRES_PASSWORD: postgres
           POSTGRES_DB: elearn_ngx_test
         ports:
           - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
 
     steps:
       - name: Checkout code
@@ -49,6 +51,9 @@ jobs:
 
       - name: RuboCop
         run: bundle exec rubocop --parallel
+
+      - name: Install PostgreSQL Client Dependencies
+        run: sudo apt-get -yqq install libpq-dev
 
       - name: Set up database
         run: |
