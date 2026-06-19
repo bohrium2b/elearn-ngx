@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 module QuestionsHelper
   def render_quiz_island(component_tag, record)
     # package database content into a structured format

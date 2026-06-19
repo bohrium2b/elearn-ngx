@@ -2,11 +2,11 @@
 
 class WorkspacePolicy < ApplicationPolicy
   def show?
-    content_author? || admin?
+    true
   end
 
   def update?
-    content_author? || admin?
+    content_author? || instructor? || admin?
   end
 
   class Scope < Scope

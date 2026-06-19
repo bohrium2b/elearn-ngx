@@ -7,22 +7,13 @@ class PracticeExerciseGenerator
     @user = user
   end
 
-  # Generate a practice exercise based on weak areas or specific tags/questions
   def generate(tag_uuids: nil, question_uuids: nil, question_count: DEFAULT_QUESTION_COUNT)
-    questions = if question_uuids.present?
-                  fetch_specific_questions(question_uuids)
-                elsif tag_uuids.present?
-                  fetch_questions_from_tags(tag_uuids, question_count)
-                else
-                  fetch_weak_area_questions(question_count)
-                end
-
+    questions = fetch_questions(tag_uuids, question_uuids, question_count)
     return nil if questions.empty?
 
     build_exercise(questions)
   end
 
-  # Create a persistent practice exercise
   def create_practice_exercise!(tag_uuids: nil, question_uuids: nil, question_count: DEFAULT_QUESTION_COUNT)
     exercise_data = generate(
       tag_uuids: tag_uuids,
@@ -41,6 +32,16 @@ class PracticeExerciseGenerator
 
   private
 
+  def fetch_questions(tag_uuids, question_uuids, question_count)
+    if question_uuids.present?
+      fetch_specific_questions(question_uuids)
+    elsif tag_uuids.present?
+      fetch_questions_from_tags(tag_uuids, question_count)
+    else
+      fetch_weak_area_questions(question_count)
+    end
+  end
+
   def fetch_specific_questions(question_uuids)
     Question.includes(:tags).where(uuid: question_uuids).distinct
   end
@@ -49,20 +50,17 @@ class PracticeExerciseGenerator
     tags = Tag.where(uuid: tag_uuids)
     return Question.none if tags.empty?
 
-    # Get all questions from the tag branches
     question_ids = tags.flat_map do |tag|
       (tag.questions + tag.all_descendants.flat_map(&:questions)).uniq
     end.map(&:id)
 
-    # Exclude already attempted questions
-    attempted_ids = @user.assessment_sessions.flat_map(&:question_uuids)
+    attempted_ids = @user&.assessment_sessions&.flat_map(&:question_uuids) || []
 
-    # Use subquery to avoid DISTINCT + ORDER BY RANDOM() issue
     Question.includes(:tags)
             .where(id: Question.where(id: question_ids)
                                 .where.not(uuid: attempted_ids)
                                 .select(:id)
-                                .order(Arel.sql('RANDOM()'))
+                                .order(Arel.sql("RANDOM()"))
                                 .limit(count))
             .distinct
   end
@@ -71,12 +69,19 @@ class PracticeExerciseGenerator
     weak_tags = identify_weak_tags
     return Question.none if weak_tags.empty?
 
-    tag_uuids = weak_tags.map { |t| t[:uuid] }
+    tag_uuids = weak_tags.pluck(:uuid)
     fetch_questions_from_tags(tag_uuids, count)
   end
 
   def identify_weak_tags
+    tag_scores = collect_tag_scores
+    filter_weak_tags(tag_scores)
+  end
+
+  def collect_tag_scores
     tag_scores = {}
+
+    return tag_scores unless @user
 
     @user.assessment_sessions.recent.find_each do |session|
       session.question_responses.each do |qr|
@@ -92,7 +97,10 @@ class PracticeExerciseGenerator
       end
     end
 
-    # Return tags with < 60% success rate, sorted weakest first
+    tag_scores
+  end
+
+  def filter_weak_tags(tag_scores)
     tag_scores
       .select { |_uuid, perf| perf[:total] >= 2 }
       .map { |_uuid, perf| perf.merge(success_rate: (perf[:correct].to_f / perf[:total]) * 100) }

@@ -1,7 +1,9 @@
+# frozen_string_literal: true
+
 require "test_helper"
 
 class QuestionPolicyTest < ActiveSupport::TestCase
-  def setup
+  setup do
     @student = create(:user, :student)
     @content_author = create(:user, :content_author)
     @instructor = create(:user, :instructor)
@@ -9,37 +11,102 @@ class QuestionPolicyTest < ActiveSupport::TestCase
     @question = create(:question)
   end
 
-  def test_index
-    assert QuestionPolicy.new(nil, @question).index?
-    assert QuestionPolicy.new(@student, @question).index?
+  # ============================================================================
+  # Index
+  # ============================================================================
+
+  test "anyone can index questions" do
+    policy = QuestionPolicy.new(nil, @question)
+    assert policy.index?
   end
 
-  def test_show
-    assert QuestionPolicy.new(nil, @question).show?
-    assert QuestionPolicy.new(@student, @question).show?
+  # ============================================================================
+  # Show
+  # ============================================================================
+
+  test "anyone can show questions" do
+    policy = QuestionPolicy.new(nil, @question)
+    assert policy.show?
   end
 
-  def test_create
-    assert_not QuestionPolicy.new(@student, @question).create?
-    assert QuestionPolicy.new(@content_author, @question).create?
-    # Instructor does not have create permission in QuestionPolicy
-    assert_not QuestionPolicy.new(@instructor, @question).create?
-    assert QuestionPolicy.new(@admin, @question).create?
+  # ============================================================================
+  # Create
+  # ============================================================================
+
+  test "student cannot create questions" do
+    policy = QuestionPolicy.new(@student, @question)
+    assert_not policy.create?
   end
 
-  def test_update
-    assert_not QuestionPolicy.new(@student, @question).update?
-    assert QuestionPolicy.new(@content_author, @question).update?
-    # Instructor does not have update permission in QuestionPolicy
-    assert_not QuestionPolicy.new(@instructor, @question).update?
-    assert QuestionPolicy.new(@admin, @question).update?
+  test "content_author can create questions" do
+    policy = QuestionPolicy.new(@content_author, @question)
+    assert policy.create?
   end
 
-  def test_destroy
-    assert_not QuestionPolicy.new(@student, @question).destroy?
-    assert QuestionPolicy.new(@content_author, @question).destroy?
-    # Instructor does not have destroy permission in QuestionPolicy
-    assert_not QuestionPolicy.new(@instructor, @question).destroy?
-    assert QuestionPolicy.new(@admin, @question).destroy?
+  test "instructor cannot create questions" do
+    policy = QuestionPolicy.new(@instructor, @question)
+    assert_not policy.create?
+  end
+
+  test "admin can create questions" do
+    policy = QuestionPolicy.new(@admin, @question)
+    assert policy.create?
+  end
+
+  # ============================================================================
+  # Update
+  # ============================================================================
+
+  test "student cannot update questions" do
+    policy = QuestionPolicy.new(@student, @question)
+    assert_not policy.update?
+  end
+
+  test "content_author can update questions" do
+    policy = QuestionPolicy.new(@content_author, @question)
+    assert policy.update?
+  end
+
+  test "instructor cannot update questions" do
+    policy = QuestionPolicy.new(@instructor, @question)
+    assert_not policy.update?
+  end
+
+  test "admin can update questions" do
+    policy = QuestionPolicy.new(@admin, @question)
+    assert policy.update?
+  end
+
+  # ============================================================================
+  # Destroy
+  # ============================================================================
+
+  test "student cannot destroy questions" do
+    policy = QuestionPolicy.new(@student, @question)
+    assert_not policy.destroy?
+  end
+
+  test "content_author can destroy questions" do
+    policy = QuestionPolicy.new(@content_author, @question)
+    assert policy.destroy?
+  end
+
+  test "instructor cannot destroy questions" do
+    policy = QuestionPolicy.new(@instructor, @question)
+    assert_not policy.destroy?
+  end
+
+  test "admin can destroy questions" do
+    policy = QuestionPolicy.new(@admin, @question)
+    assert policy.destroy?
+  end
+
+  # ============================================================================
+  # Scope
+  # ============================================================================
+
+  test "scope resolves to all questions" do
+    scope = QuestionPolicy::Scope.new(@student, Question.all)
+    assert_equal Question.all, scope.resolve
   end
 end

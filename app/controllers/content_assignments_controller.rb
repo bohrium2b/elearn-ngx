@@ -1,16 +1,16 @@
 # frozen_string_literal: true
 
 class ContentAssignmentsController < ApplicationController
-  before_action :set_content_assignment, only: [:update, :destroy]
+  before_action :set_content_assignment, only: %i[update destroy]
 
   # POST /content_assignments
   def create
     @assignment = ContentAssignment.new(content_assignment_params)
-    
+
     if @assignment.save
       render json: serialize_assignment(@assignment), status: :created
     else
-      render json: { errors: @assignment.errors.full_messages }, status: :unprocessable_entity
+      render json: { errors: @assignment.errors.full_messages }, status: :unprocessable_content
     end
   end
 
@@ -19,7 +19,7 @@ class ContentAssignmentsController < ApplicationController
     if @assignment.update(content_assignment_params)
       render json: serialize_assignment(@assignment)
     else
-      render json: { errors: @assignment.errors.full_messages }, status: :unprocessable_entity
+      render json: { errors: @assignment.errors.full_messages }, status: :unprocessable_content
     end
   end
 

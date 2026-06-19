@@ -89,7 +89,7 @@ export default function AppNavigation({
   const getNavItems = (role: string): NavItem[] => {
     const baseItems: NavItem[] = [
       { label: "Dashboard", href: "/", testId: "nav-dashboard" },
-      { label: "Courses", href: "/courses", testId: "nav-courses" },
+      { label: "Courses", href: "/learning_pathways/", testId: "nav-courses" },
       { label: "Exercises", href: "/exercises", testId: "nav-exercises" },
     ];
 

@@ -136,7 +136,9 @@ export const InventoryPanel: React.FC<InventoryPanelProps> = ({ onDragStart }) =
             )}
             <ListItemText
               primary={tag.name}
-              primaryTypographyProps={{ variant: 'body2' }}
+              slotProps={{
+                primary: { variant: 'body2' }
+              }}
             />
             <Chip
               label={(tag.questions?.length || 0) + (tag.children?.length || 0)}
@@ -166,7 +168,9 @@ export const InventoryPanel: React.FC<InventoryPanelProps> = ({ onDragStart }) =
                   <ListItemText
                     primary={question.question?.substring(0, 40) + '...'}
                     secondary={question.type}
-                    primaryTypographyProps={{ variant: 'caption' }}
+                    slotProps={{
+                      primary: { variant: 'caption' }
+                    }}
                   />
                 </ListItem>
               ))}

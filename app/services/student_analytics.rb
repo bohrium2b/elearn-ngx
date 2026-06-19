@@ -5,7 +5,6 @@ class StudentAnalytics
     @user = user
   end
 
-  # Chronological ledger of all completed exercises (paginated)
   def chronological_ledger(page: 1, per_page: 10)
     @user.assessment_sessions
          .recent
@@ -15,13 +14,10 @@ class StudentAnalytics
          .map { |session| serialize_ledger_entry(session) }
   end
 
-  # Total count for pagination
   def total_sessions_count
     @user.assessment_sessions.count
   end
 
-  # Questions attempted multiple times with consistently low scores
-  # Now shows topic names instead of question slugs
   def weak_points(window: 30.days)
     sessions = @user.assessment_sessions
                     .in_time_window(window)
@@ -30,39 +26,10 @@ class StudentAnalytics
     question_performance = {}
     question_tags = {}
 
-    sessions.find_each do |session|
-      session.question_responses.each do |qr|
-        uuid = qr["question_uuid"]
-        question_performance[uuid] ||= { correct: 0, total: 0, question_data: qr }
-        question_performance[uuid][:total] += 1
-        question_performance[uuid][:correct] += 1 if qr["correct"] == true
-
-        # Cache tags for this question
-        unless question_tags.key?(uuid)
-          question = Question.find_by(uuid: uuid)
-          question_tags[uuid] = question&.tags&.pluck(:name) || []
-        end
-      end
-    end
-
-    # Filter: attempted more than once with < 50% success rate
-    weak = question_performance.select do |_uuid, perf|
-      perf[:total] > 1 && (perf[:correct].to_f / perf[:total]) < 0.5
-    end
-
-    weak.map do |_uuid, perf|
-      {
-        question_uuid: perf[:question_data]["question_uuid"],
-        attempts: perf[:total],
-        correct: perf[:correct],
-        success_rate: ((perf[:correct].to_f / perf[:total]) * 100).round(2),
-        last_attempt: perf[:question_data]["completed_at"],
-        tags: question_tags[perf[:question_data]["question_uuid"]] || []
-      }
-    end.sort_by { |wp| wp[:success_rate] }
+    collect_question_performance(sessions, question_performance, question_tags)
+    filter_and_format_weak_points(question_performance, question_tags)
   end
 
-  # Smart recommendations: generates custom exercises targeting weak areas
   def recommendations(limit: 5)
     generator = PracticeExerciseGenerator.new(@user)
     exercise = generator.generate(question_count: limit)
@@ -78,7 +45,6 @@ class StudentAnalytics
     }]
   end
 
-  # Summary stats for dashboard
   def dashboard_summary
     sessions = @user.assessment_sessions
     recent_sessions = sessions.in_time_window(30.days)
@@ -98,7 +64,137 @@ class StudentAnalytics
     }
   end
 
+  def weak_points_by_topic
+    topics = TaxonomyNode.topics.includes(:assessment_sessions)
+
+    topic_performance = topics.filter_map do |topic|
+      sessions = topic.assessment_sessions.where(user: @user)
+      next if sessions.empty?
+
+      avg_score = sessions.average(:score_percentage) || 0
+
+      {
+        topic_id: topic.id,
+        topic_name: topic.name,
+        average_score: avg_score.round(2),
+        sessions_count: sessions.count,
+        weak_area: avg_score < 70
+      }
+    end
+
+    topic_performance.sort_by { |tp| tp[:average_score] }
+  end
+
+  def topic_recommendations
+    weak_points = weak_points_by_topic
+    weak_topics = weak_points.select { |tp| tp[:weak_area] }.first(5)
+
+    weak_topics.map do |wt|
+      topic = TaxonomyNode.find(wt[:topic_id])
+      {
+        topic_id: topic.id,
+        topic_name: topic.name,
+        reason: "Low average score (#{wt[:average_score].round}%)",
+        exercises: topic.topic_exercises.includes(:exercise).limit(3).map do |te|
+          { id: te.exercise_id, name: te.exercise.title }
+        end,
+        questions_count: topic.questions.count
+      }
+    end
+  end
+
+  def performance_by_topic(timeframe: 30.days)
+    sessions = @user.assessment_sessions
+                    .where("completed_at > ?", timeframe.ago)
+                    .where.not(taxonomy_node_id: nil)
+
+    topic_performance = {}
+
+    sessions.find_each do |session|
+      topic = session.taxonomy_node
+      next unless topic
+
+      topic_performance[topic.id] ||= {
+        topic_id: topic.id,
+        topic_name: topic.name,
+        sessions_count: 0,
+        total_score: 0,
+        average_score: 0
+      }
+
+      topic_performance[topic.id][:sessions_count] += 1
+      topic_performance[topic.id][:total_score] += session.score_percentage || 0
+    end
+
+    topic_performance.each_value do |data|
+      data[:average_score] = (data[:total_score].to_f / data[:sessions_count]).round(2)
+    end
+
+    topic_performance.values.sort_by { |tp| -tp[:average_score] }
+  end
+
+  def topic_mastery_levels
+    topics = TaxonomyNode.topics.includes(:assessment_sessions)
+
+    topics.filter_map do |topic|
+      sessions = topic.assessment_sessions.where(user: @user)
+      next if sessions.empty?
+
+      avg_score = (sessions.average(:score_percentage) || 0).round(2)
+
+      {
+        topic_id: topic.id,
+        topic_name: topic.name,
+        average_score: avg_score,
+        sessions_count: sessions.count,
+        mastery_level: determine_mastery_level(avg_score / 100.0)
+      }
+    end.sort_by { |tm| -tm[:average_score] }
+  end
+
   private
+
+  def collect_question_performance(sessions, question_performance, question_tags)
+    sessions.find_each do |session|
+      session.question_responses.each do |qr|
+        uuid = qr["question_uuid"]
+        question_performance[uuid] ||= { correct: 0, total: 0, question_data: qr }
+        question_performance[uuid][:total] += 1
+        question_performance[uuid][:correct] += 1 if qr["correct"] == true
+
+        unless question_tags.key?(uuid)
+          question = Question.find_by(uuid: uuid)
+          question_tags[uuid] = question&.tags&.pluck(:name) || []
+        end
+      end
+    end
+  end
+
+  def filter_and_format_weak_points(question_performance, question_tags)
+    weak = question_performance.select do |_uuid, perf|
+      perf[:total] > 1 && (perf[:correct].to_f / perf[:total]) <= 0.5
+    end
+
+    weak.map do |_uuid, perf|
+      {
+        question_uuid: perf[:question_data]["question_uuid"],
+        attempts: perf[:total],
+        correct: perf[:correct],
+        success_rate: ((perf[:correct].to_f / perf[:total]) * 100).round(2),
+        last_attempt: perf[:question_data]["completed_at"],
+        tags: question_tags[perf[:question_data]["question_uuid"]] || []
+      }
+    end.sort_by { |wp| wp[:success_rate] }
+  end
+
+  def determine_mastery_level(score)
+    case score
+    when 0.9..1.0 then "mastered"
+    when 0.7...0.9 then "proficient"
+    when 0.5...0.7 then "developing"
+    else "needs_improvement"
+    end
+  end
 
   def serialize_ledger_entry(session)
     {
@@ -116,7 +212,6 @@ class StudentAnalytics
   end
 
   def calculate_streak
-    # Streak is defined as number of days in a row with a session score
     sessions = @user.assessment_sessions
                     .recent
                     .where.not(score_percentage: nil)
@@ -131,8 +226,7 @@ class StudentAnalytics
   end
 
   def extract_tags_from_questions(questions)
-    # This is a simplified version - in practice, you'd want to look up the actual tags
-    questions.map.with_index do |q, idx|
+    questions.map.with_index do |_q, idx|
       { name: "Topic #{idx + 1}", uuid: "tag-#{idx}" }
     end.uniq
   end

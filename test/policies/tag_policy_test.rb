@@ -1,7 +1,9 @@
+# frozen_string_literal: true
+
 require "test_helper"
 
 class TagPolicyTest < ActiveSupport::TestCase
-  def setup
+  setup do
     @student = create(:user, :student)
     @content_author = create(:user, :content_author)
     @instructor = create(:user, :instructor)
@@ -9,37 +11,102 @@ class TagPolicyTest < ActiveSupport::TestCase
     @tag = create(:tag)
   end
 
-  def test_index
-    assert TagPolicy.new(nil, @tag).index?
-    assert TagPolicy.new(@student, @tag).index?
+  # ============================================================================
+  # Index
+  # ============================================================================
+
+  test "anyone can index tags" do
+    policy = TagPolicy.new(nil, @tag)
+    assert policy.index?
   end
 
-  def test_show
-    assert TagPolicy.new(nil, @tag).show?
-    assert TagPolicy.new(@student, @tag).show?
+  # ============================================================================
+  # Show
+  # ============================================================================
+
+  test "anyone can show tags" do
+    policy = TagPolicy.new(nil, @tag)
+    assert policy.show?
   end
 
-  def test_create
-    assert_not TagPolicy.new(@student, @tag).create?
-    assert TagPolicy.new(@content_author, @tag).create?
-    # Instructor does not have create permission in TagPolicy
-    assert_not TagPolicy.new(@instructor, @tag).create?
-    assert TagPolicy.new(@admin, @tag).create?
+  # ============================================================================
+  # Create
+  # ============================================================================
+
+  test "student cannot create tags" do
+    policy = TagPolicy.new(@student, @tag)
+    assert_not policy.create?
   end
 
-  def test_update
-    assert_not TagPolicy.new(@student, @tag).update?
-    assert TagPolicy.new(@content_author, @tag).update?
-    # Instructor does not have update permission in TagPolicy
-    assert_not TagPolicy.new(@instructor, @tag).update?
-    assert TagPolicy.new(@admin, @tag).update?
+  test "content_author can create tags" do
+    policy = TagPolicy.new(@content_author, @tag)
+    assert policy.create?
   end
 
-  def test_destroy
-    assert_not TagPolicy.new(@student, @tag).destroy?
-    assert TagPolicy.new(@content_author, @tag).destroy?
-    # Instructor does not have destroy permission in TagPolicy
-    assert_not TagPolicy.new(@instructor, @tag).destroy?
-    assert TagPolicy.new(@admin, @tag).destroy?
+  test "instructor cannot create tags" do
+    policy = TagPolicy.new(@instructor, @tag)
+    assert_not policy.create?
+  end
+
+  test "admin can create tags" do
+    policy = TagPolicy.new(@admin, @tag)
+    assert policy.create?
+  end
+
+  # ============================================================================
+  # Update
+  # ============================================================================
+
+  test "student cannot update tags" do
+    policy = TagPolicy.new(@student, @tag)
+    assert_not policy.update?
+  end
+
+  test "content_author can update tags" do
+    policy = TagPolicy.new(@content_author, @tag)
+    assert policy.update?
+  end
+
+  test "instructor cannot update tags" do
+    policy = TagPolicy.new(@instructor, @tag)
+    assert_not policy.update?
+  end
+
+  test "admin can update tags" do
+    policy = TagPolicy.new(@admin, @tag)
+    assert policy.update?
+  end
+
+  # ============================================================================
+  # Destroy
+  # ============================================================================
+
+  test "student cannot destroy tags" do
+    policy = TagPolicy.new(@student, @tag)
+    assert_not policy.destroy?
+  end
+
+  test "content_author can destroy tags" do
+    policy = TagPolicy.new(@content_author, @tag)
+    assert policy.destroy?
+  end
+
+  test "instructor cannot destroy tags" do
+    policy = TagPolicy.new(@instructor, @tag)
+    assert_not policy.destroy?
+  end
+
+  test "admin can destroy tags" do
+    policy = TagPolicy.new(@admin, @tag)
+    assert policy.destroy?
+  end
+
+  # ============================================================================
+  # Scope
+  # ============================================================================
+
+  test "scope resolves to all tags" do
+    scope = TagPolicy::Scope.new(@student, Tag.all)
+    assert_equal Tag.all, scope.resolve
   end
 end

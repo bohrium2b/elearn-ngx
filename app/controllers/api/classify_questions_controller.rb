@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 module Api
   class ClassifyQuestionsController < ApplicationController
     protect_from_forgery with: :exception
@@ -13,9 +15,7 @@ module Api
       end
 
       render json: { status: "success" }, status: :ok
-    rescue ActiveRecord::RecordNotFound => e
-      render json: { status: "error", message: e.message }, status: :unprocessable_content
-    rescue ActiveRecord::RecordInvalid, ActiveRecord::StatementInvalid => e
+    rescue ActiveRecord::RecordNotFound, ActiveRecord::RecordInvalid, ActiveRecord::StatementInvalid => e
       render json: { status: "error", message: e.message }, status: :unprocessable_content
     end
   end

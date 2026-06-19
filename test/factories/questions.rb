@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 FactoryBot.define do
   factory :question do
     sequence(:question_id_code) { |n| "Q-#{100 + n}" }

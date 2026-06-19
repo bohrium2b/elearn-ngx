@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 class WorkspaceController < ApplicationController
   before_action :authenticate_user!, except: [:show]
   after_action :verify_authorized
@@ -15,8 +17,7 @@ class WorkspaceController < ApplicationController
 
   def update
     authorize :workspace, :update?
-    # Update workspace logic
-    redirect_to workspace_path, notice: "Workspace updated successfully."
+    redirect_to workspace_path, notice: t("messages.workspace_updated")
   end
 
   private

@@ -5,7 +5,15 @@
  * learning pathways, and admin operations.
  */
 
-import { TaxonomyNode, Course, ContentAssignment, UserProgress } from "./types";
+import {
+  TaxonomyNode,
+  Course,
+  ContentAssignment,
+  UserProgress,
+  Tag,
+  Exercise,
+  AllResources,
+} from "./types";
 import { showToast } from "./useToast";
 
 const API_BASE = "/taxonomy";
@@ -101,6 +109,10 @@ export const taxonomyApi = {
   // Get nodes by level
   getByLevel: (level: string) =>
     fetchJson<TaxonomyNode[]>(`${API_BASE}/by_level?level=${level}`),
+
+  // Get all resources for a topic (tags, questions, exercises)
+  getAllResources: (nodeId: string) =>
+    fetchJson<AllResources>(`${API_BASE}/${nodeId}/all_resources`),
 };
 
 export const contentAssignmentApi = {
@@ -203,4 +215,44 @@ export const adminTaxonomyApi = {
       method: "PATCH",
       body: JSON.stringify({ move: { new_parent_id: newParentId } }),
     }),
+};
+
+// Topic Tags API - for managing tag associations with topics
+export const topicTagApi = {
+  // Get tags for a topic
+  getByTopic: (topicId: number) =>
+    fetchJson<Tag[]>(`/topic_tags?taxonomy_node_id=${topicId}`),
+
+  // Attach tag to topic
+  create: (topicId: number, tagId: number) =>
+    fetchJson("/topic_tags", {
+      method: "POST",
+      body: JSON.stringify({
+        topic_tag: { taxonomy_node_id: topicId, tag_id: tagId },
+      }),
+    }),
+
+  // Detach tag from topic
+  delete: (topicId: number, tagId: number) =>
+    fetch(`/topic_tags/${tagId}`, { method: "DELETE" }),
+};
+
+// Topic Exercises API - for managing exercise associations with topics
+export const topicExerciseApi = {
+  // Get exercises for a topic
+  getByTopic: (topicId: number) =>
+    fetchJson<Exercise[]>(`/topic_exercises?taxonomy_node_id=${topicId}`),
+
+  // Attach exercise to topic
+  create: (topicId: number, exerciseId: number) =>
+    fetchJson("/topic_exercises", {
+      method: "POST",
+      body: JSON.stringify({
+        topic_exercise: { taxonomy_node_id: topicId, exercise_id: exerciseId },
+      }),
+    }),
+
+  // Detach exercise from topic
+  delete: (topicId: number, exerciseId: number) =>
+    fetch(`/topic_exercises/${exerciseId}`, { method: "DELETE" }),
 };

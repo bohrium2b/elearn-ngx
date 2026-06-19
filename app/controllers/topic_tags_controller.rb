@@ -36,7 +36,7 @@ class TopicTagsController < ApplicationController
   private
 
   def set_topic
-    @topic = TaxonomyNode.find_by_param(params[:taxonomy_node_id]) if params[:taxonomy_node_id]
+    @topic = TaxonomyNode.find_by_param(params[:taxonomy_node_id]) if params[:taxonomy_node_id] # rubocop:disable Rails/DynamicFindBy
   end
 
   def set_topic_tag

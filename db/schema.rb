@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.2].define(version: 2026_06_08_050609) do
+ActiveRecord::Schema[7.2].define(version: 2026_06_13_011936) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pgcrypto"
   enable_extension "plpgsql"
@@ -25,8 +25,10 @@ ActiveRecord::Schema[7.2].define(version: 2026_06_08_050609) do
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.uuid "uuid", default: -> { "gen_random_uuid()" }, null: false
+    t.bigint "taxonomy_node_id"
     t.index ["completed_at"], name: "index_assessment_sessions_on_completed_at"
     t.index ["exercise_id"], name: "index_assessment_sessions_on_exercise_id"
+    t.index ["taxonomy_node_id"], name: "index_assessment_sessions_on_taxonomy_node_id"
     t.index ["telemetry_data"], name: "index_assessment_sessions_on_telemetry_data", using: :gin
     t.index ["user_id", "exercise_id"], name: "index_assessment_sessions_on_user_id_and_exercise_id"
     t.index ["user_id"], name: "index_assessment_sessions_on_user_id"
@@ -53,7 +55,9 @@ ActiveRecord::Schema[7.2].define(version: 2026_06_08_050609) do
     t.uuid "uuid", default: -> { "gen_random_uuid()" }, null: false
     t.string "slug"
     t.boolean "is_practice", default: false, null: false
+    t.bigint "primary_topic_id"
     t.index ["is_practice"], name: "index_exercises_on_is_practice"
+    t.index ["primary_topic_id"], name: "index_exercises_on_primary_topic_id"
     t.index ["slug"], name: "index_exercises_on_slug", unique: true
     t.index ["uuid"], name: "index_exercises_on_uuid", unique: true
   end
@@ -122,6 +126,28 @@ ActiveRecord::Schema[7.2].define(version: 2026_06_08_050609) do
     t.index ["uuid"], name: "index_taxonomy_nodes_on_uuid", unique: true
   end
 
+  create_table "topic_exercises", force: :cascade do |t|
+    t.bigint "taxonomy_node_id", null: false
+    t.bigint "exercise_id", null: false
+    t.integer "position", default: 0
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["exercise_id"], name: "index_topic_exercises_on_exercise_id"
+    t.index ["taxonomy_node_id", "exercise_id"], name: "index_topic_exercises_on_node_and_exercise", unique: true
+    t.index ["taxonomy_node_id", "position"], name: "index_topic_exercises_on_taxonomy_node_id_and_position"
+    t.index ["taxonomy_node_id"], name: "index_topic_exercises_on_taxonomy_node_id"
+  end
+
+  create_table "topic_tags", force: :cascade do |t|
+    t.bigint "taxonomy_node_id", null: false
+    t.bigint "tag_id", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["tag_id"], name: "index_topic_tags_on_tag_id"
+    t.index ["taxonomy_node_id", "tag_id"], name: "index_topic_tags_on_node_and_tag", unique: true
+    t.index ["taxonomy_node_id"], name: "index_topic_tags_on_taxonomy_node_id"
+  end
+
   create_table "users", force: :cascade do |t|
     t.string "email", default: "", null: false
     t.string "encrypted_password", default: "", null: false
@@ -151,12 +177,18 @@ ActiveRecord::Schema[7.2].define(version: 2026_06_08_050609) do
   end
 
   add_foreign_key "assessment_sessions", "exercises"
+  add_foreign_key "assessment_sessions", "taxonomy_nodes"
   add_foreign_key "assessment_sessions", "users"
   add_foreign_key "content_assignments", "questions"
   add_foreign_key "content_assignments", "taxonomy_nodes"
+  add_foreign_key "exercises", "taxonomy_nodes", column: "primary_topic_id"
   add_foreign_key "tags", "tags", column: "parent_id"
   add_foreign_key "tags", "taxonomy_nodes"
   add_foreign_key "taxonomy_nodes", "taxonomy_nodes", column: "course_id"
   add_foreign_key "taxonomy_nodes", "taxonomy_nodes", column: "parent_id"
+  add_foreign_key "topic_exercises", "exercises"
+  add_foreign_key "topic_exercises", "taxonomy_nodes"
+  add_foreign_key "topic_tags", "tags"
+  add_foreign_key "topic_tags", "taxonomy_nodes"
   add_foreign_key "users_roles", "roles"
 end

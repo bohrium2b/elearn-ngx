@@ -1,10 +1,15 @@
+# frozen_string_literal: true
+
 class Question < ApplicationRecord
   before_validation :ensure_uuid, on: :create
   before_validation :ensure_slug, on: :create
 
+  has_and_belongs_to_many :tags
+
+  scope :untagged, -> { where.missing(:tags) }
+
   def ensure_valid_question_structure
-    # This method checks that the question has a valid structure, e.g., its config_data key is in the form
-    # { "type": "multi-choice", "question": "...", "choices": [{ "content": "...", "correct": true, "rationale": "..."}, ...], "hints": ["..."]}
+    # This method checks that the question has a valid structure
   end
 
   def ensure_uuid
@@ -31,8 +36,4 @@ class Question < ApplicationRecord
       slug.presence || id.to_s
     end
   end
-
-  has_and_belongs_to_many :tags
-
-  scope :untagged, -> { where.missing(:tags) }
 end

@@ -6,27 +6,21 @@ module Admin
     before_action :require_admin!
     before_action :set_taxonomy_node, only: %i[show update destroy reorder move]
 
-    # GET /admin/taxonomy_nodes
     def index
       @nodes = TaxonomyNode.ordered
 
       respond_to do |format|
-        format.html # Renders index.html.erb
+        format.html
         format.json { render json: @nodes.map { |n| serialize_node(n) } }
       end
     end
 
-    # GET /admin/taxonomy_nodes/assemble
-    def assemble
-      # Renders the course assembly dashboard
-    end
+    def assemble; end
 
-    # GET /admin/taxonomy_nodes/:id
     def show
       render json: serialize_node(@node)
     end
 
-    # POST /admin/taxonomy_nodes
     def create
       @node = TaxonomyNode.new(taxonomy_node_params)
 
@@ -37,7 +31,6 @@ module Admin
       end
     end
 
-    # PATCH/PUT /admin/taxonomy_nodes/:id
     def update
       if @node.update(taxonomy_node_params)
         render json: serialize_node(@node)
@@ -46,27 +39,22 @@ module Admin
       end
     end
 
-    # DELETE /admin/taxonomy_nodes/:id
     def destroy
       @node.destroy
       head :no_content
     end
 
-    # PATCH /admin/taxonomy_nodes/:id/reorder
     def reorder
-      new_position = params[:position].to_i
-      # Logic to reorder node among siblings
+      params[:position].to_i
       render json: serialize_node(@node)
     end
 
-    # PATCH /admin/taxonomy_nodes/:id/move
     def move
       new_parent = TaxonomyNode.find_by(move_params[:new_parent_id])
       @node.update(parent: new_parent, course: new_parent.course)
       render json: serialize_node(@node)
     end
 
-    # GET /admin/taxonomy_nodes/full_tree
     def full_tree
       @courses = TaxonomyNode.course.roots.ordered.includes(children: { children: { children: :questions } })
       render json: serialize_full_tree(@courses)
@@ -75,7 +63,7 @@ module Admin
     private
 
     def set_taxonomy_node
-      @node = TaxonomyNode.find_by_param(params[:id])
+      @node = TaxonomyNode.find_by(param: params[:id])
       render json: { error: "Not found" }, status: :not_found unless @node
     end
 
@@ -123,13 +111,9 @@ module Admin
     def serialize_children(nodes)
       nodes.map do |node|
         serialized = serialize_node(node)
-        if node.part?
-          serialized[:units] = serialize_children(node.children.ordered) if node.children.any?
-        elsif node.unit?
-          serialized[:topics] = serialize_children(node.children.ordered) if node.children.any?
-        elsif node.topic?
-          serialized[:questions] = node.questions.map { |q| serialize_question(q) } if node.questions.any?
-        end
+        serialized[:units] = serialize_children(node.children.ordered) if node.part? && node.children.any?
+        serialized[:topics] = serialize_children(node.children.ordered) if node.unit? && node.children.any?
+        serialized[:questions] = node.questions.map { |q| serialize_question(q) } if node.topic? && node.questions.any?
         serialized
       end
     end

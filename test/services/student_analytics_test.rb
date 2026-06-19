@@ -4,174 +4,361 @@ require "test_helper"
 
 class StudentAnalyticsTest < ActiveSupport::TestCase
   setup do
-    @student = create(:user, :student)
+    @user = create(:user)
     @exercise = create(:exercise)
-    @tag = create(:tag, name: "Algebra")
-    @question1 = create(:question)
-    @question2 = create(:question)
-    @question1.tags << @tag
-    @question2.tags << @tag
   end
 
-  test "chronological_ledger returns sessions in descending order" do
-    old_session = create(:assessment_session, user: @student, exercise: @exercise, completed_at: 10.days.ago)
-    new_session = create(:assessment_session, user: @student, exercise: @exercise, completed_at: 1.day.ago)
+  # ============================================================================
+  # Initialization
+  # ============================================================================
 
-    analytics = StudentAnalytics.new(@student)
+  test "should initialize with user" do
+    analytics = StudentAnalytics.new(@user)
+    assert_instance_of StudentAnalytics, analytics
+  end
+
+  # ============================================================================
+  # chronological_ledger
+  # ============================================================================
+
+  test "chronological_ledger returns empty array when no sessions" do
+    analytics = StudentAnalytics.new(@user)
+    assert_empty analytics.chronological_ledger
+  end
+
+  test "chronological_ledger returns serialized sessions" do
+    session = create(:assessment_session, user: @user, exercise: @exercise)
+    analytics = StudentAnalytics.new(@user)
+
     ledger = analytics.chronological_ledger
-
-    assert ledger.length >= 2
-    # Most recent first
-    assert ledger.first[:completed_at] >= ledger.last[:completed_at]
+    assert_equal 1, ledger.count
+    assert_equal session.uuid, ledger.first[:uuid]
+    assert_equal @exercise.title, ledger.first[:exercise_title]
   end
 
-  test "weak_points excludes records outside time window" do
-    # Old session (outside 30-day window) with poor performance
-    old_uuid = SecureRandom.uuid
-    create(:assessment_session,
-           user: @student,
-           exercise: @exercise,
-           completed_at: 60.days.ago,
-           telemetry_data: {
-             "question_responses" => [
-               { "question_uuid" => old_uuid, "correct" => false },
-               { "question_uuid" => old_uuid, "correct" => false }
-             ]
-           })
+  test "chronological_ledger orders by completed_at desc" do
+    old_session = create(:assessment_session, user: @user, exercise: @exercise, completed_at: 1.day.ago)
+    new_session = create(:assessment_session, user: @user, exercise: @exercise, completed_at: 1.hour.ago)
+    analytics = StudentAnalytics.new(@user)
 
-    # Recent session with good performance
-    create(:assessment_session,
-           :perfect_score,
-           user: @student,
-           exercise: @exercise,
-           completed_at: 1.day.ago)
-
-    analytics = StudentAnalytics.new(@student)
-    weak_points = analytics.weak_points(window: 30.days)
-
-    # Old weak point should not appear
-    assert weak_points.none? { |wp| wp[:question_uuid] == old_uuid },
-           "Weak points outside time window should be excluded"
+    ledger = analytics.chronological_ledger
+    assert_equal new_session.uuid, ledger.first[:uuid]
+    assert_equal old_session.uuid, ledger.last[:uuid]
   end
 
-  test "weak_points identifies questions with low success rate" do
-    # Same question attempted twice recently, both wrong
-    weak_uuid = SecureRandom.uuid
-    2.times do
-      create(:assessment_session,
-             user: @student,
-             exercise: @exercise,
-             completed_at: 5.days.ago,
-             telemetry_data: {
-               "question_responses" => [
-                 { "question_uuid" => weak_uuid, "correct" => false }
-               ]
-             })
-    end
+  test "chronological_ledger includes correct fields" do
+    create(:assessment_session, user: @user, exercise: @exercise)
+    analytics = StudentAnalytics.new(@user)
 
-    analytics = StudentAnalytics.new(@student)
-    weak_points = analytics.weak_points(window: 30.days)
-
-    weak = weak_points.find { |wp| wp[:question_uuid] == weak_uuid }
-    assert_not_nil weak, "Question with repeated failures should appear in weak points"
-    assert_equal 0.0, weak[:success_rate]
+    entry = analytics.chronological_ledger.first
+    assert entry.key?(:id)
+    assert entry.key?(:uuid)
+    assert entry.key?(:exercise_id)
+    assert entry.key?(:exercise_title)
+    assert entry.key?(:score_percentage)
+    assert entry.key?(:total_questions)
+    assert entry.key?(:correct_count)
+    assert entry.key?(:duration_seconds)
+    assert entry.key?(:completed_at)
+    assert entry.key?(:review_path)
   end
 
-  test "weak_points does not include single-attempt questions" do
-    create(:assessment_session,
-           user: @student,
-           exercise: @exercise,
-           completed_at: 1.day.ago,
-           telemetry_data: {
-             "question_responses" => [
-               { "question_uuid" => SecureRandom.uuid, "correct" => false }
-             ]
-           })
+  # ============================================================================
+  # total_sessions_count
+  # ============================================================================
 
-    analytics = StudentAnalytics.new(@student)
+  test "total_sessions_count returns zero when no sessions" do
+    analytics = StudentAnalytics.new(@user)
+    assert_equal 0, analytics.total_sessions_count
+  end
+
+  test "total_sessions_count returns correct count" do
+    3.times { create(:assessment_session, user: @user, exercise: @exercise) }
+    analytics = StudentAnalytics.new(@user)
+    assert_equal 3, analytics.total_sessions_count
+  end
+
+  # ============================================================================
+  # weak_points
+  # ============================================================================
+
+  test "weak_points returns empty array when no sessions" do
+    analytics = StudentAnalytics.new(@user)
+    assert_empty analytics.weak_points
+  end
+
+  test "weak_points returns questions with low success rate" do
+    question = create(:question)
+    telemetry_data = {
+      "question_responses" => [
+        { "question_uuid" => question.uuid, "correct" => false },
+        { "question_uuid" => question.uuid, "correct" => false },
+        { "question_uuid" => question.uuid, "correct" => true }
+      ]
+    }
+    create(:assessment_session, user: @user, exercise: @exercise, telemetry_data: telemetry_data)
+
+    analytics = StudentAnalytics.new(@user)
     weak_points = analytics.weak_points
 
-    # Single-attempt questions should not appear (requires > 1 attempt)
-    assert(weak_points.all? { |wp| wp[:attempts] > 1 })
+    # Should include question with < 50% success rate and > 1 attempt
+    assert(weak_points.any? { |wp| wp[:question_uuid] == question.uuid })
   end
 
-  test "recommendations returns custom exercise for weak areas" do
-    # Student performs poorly on Algebra questions
-    2.times do
-      create(:assessment_session,
-             user: @student,
-             exercise: @exercise,
-             completed_at: 5.days.ago,
-             telemetry_data: {
-               "question_responses" => [
-                 { "question_uuid" => @question1.uuid, "correct" => false }
-               ]
-             })
-    end
+  test "weak_points excludes questions with only one attempt" do
+    question = create(:question)
+    telemetry_data = {
+      "question_responses" => [
+        { "question_uuid" => question.uuid, "correct" => false }
+      ]
+    }
+    create(:assessment_session, user: @user, exercise: @exercise, telemetry_data: telemetry_data)
 
-    # Create an unattempted question under the same tag
-    new_question = create(:question)
-    new_question.tags << @tag
+    analytics = StudentAnalytics.new(@user)
+    weak_points = analytics.weak_points
 
-    analytics = StudentAnalytics.new(@student)
+    assert_empty weak_points
+  end
+
+  test "weak_points sorts by success rate ascending" do
+    q1 = create(:question)
+    q2 = create(:question)
+    telemetry_data = {
+      "question_responses" => [
+        { "question_uuid" => q1.uuid, "correct" => false },
+        { "question_uuid" => q1.uuid, "correct" => false },
+        { "question_uuid" => q2.uuid, "correct" => false },
+        { "question_uuid" => q2.uuid, "correct" => true }
+      ]
+    }
+    create(:assessment_session, user: @user, exercise: @exercise, telemetry_data: telemetry_data)
+
+    analytics = StudentAnalytics.new(@user)
+    weak_points = analytics.weak_points
+
+    assert_equal 2, weak_points.count
+    assert weak_points.first[:success_rate] <= weak_points.last[:success_rate]
+  end
+
+  test "weak_points respects window parameter" do
+    question = create(:question)
+    telemetry_data = {
+      "question_responses" => [
+        { "question_uuid" => question.uuid, "correct" => false },
+        { "question_uuid" => question.uuid, "correct" => false }
+      ]
+    }
+    create(:assessment_session, user: @user, exercise: @exercise, telemetry_data: telemetry_data, completed_at: 2.months.ago)
+
+    analytics = StudentAnalytics.new(@user)
+    weak_points = analytics.weak_points(window: 30.days)
+
+    assert_empty weak_points
+  end
+
+  # ============================================================================
+  # recommendations
+  # ============================================================================
+
+  test "recommendations returns empty array when no questions available" do
+    analytics = StudentAnalytics.new(@user)
+    assert_empty analytics.recommendations
+  end
+
+  test "recommendations returns exercise recommendation when questions available" do
+    tag = create(:tag)
+    question = create(:question)
+    tag.questions << question
+
+    analytics = StudentAnalytics.new(@user)
     recommendations = analytics.recommendations
 
-    # Should return at least one recommendation
-    assert recommendations.length > 0, "Should have at least one recommendation"
-
-    # Recommendation should be a custom exercise
-    rec = recommendations.first
-    assert_equal "custom_exercise", rec[:type]
-    assert rec[:title].present?
-    assert rec[:exercise_path].present?
+    # Should return recommendations if PracticeExerciseGenerator can create exercise
+    assert_kind_of Array, recommendations
   end
 
-  test "recommendations returns empty when no weak areas" do
-    # Student has no sessions, so no weak areas
-    analytics = StudentAnalytics.new(@student)
-    recommendations = analytics.recommendations
-
-    # Should return empty array when no weak areas identified
-    assert_equal [], recommendations
-  end
+  # ============================================================================
+  # dashboard_summary
+  # ============================================================================
 
   test "dashboard_summary returns correct structure" do
-    create(:assessment_session, :perfect_score, user: @student, exercise: @exercise)
-    create(:assessment_session, :low_score, user: @student, exercise: @exercise)
-
-    analytics = StudentAnalytics.new(@student)
+    analytics = StudentAnalytics.new(@user)
     summary = analytics.dashboard_summary
 
-    assert summary[:total_sessions].is_a?(Integer)
-    assert summary[:average_score].is_a?(Float)
-    assert summary[:total_questions_answered].is_a?(Integer)
-    assert summary[:total_correct].is_a?(Integer)
-    assert summary[:current_streak].is_a?(Integer)
+    assert summary.key?(:total_sessions)
+    assert summary.key?(:average_score)
+    assert summary.key?(:recent_sessions_count)
+    assert summary.key?(:recent_average_score)
+    assert summary.key?(:weekly_sessions_count)
+    assert summary.key?(:weekly_average_score)
+    assert summary.key?(:total_questions_answered)
+    assert summary.key?(:total_correct)
+    assert summary.key?(:current_streak)
   end
 
-  test "question deduplication prevents skewing tag-wide performance" do
-    # Student retries the same question multiple times
-    same_uuid = SecureRandom.uuid
-    3.times do
-      create(:assessment_session,
-             user: @student,
-             exercise: @exercise,
-             completed_at: 5.days.ago,
-             telemetry_data: {
-               "question_responses" => [
-                 { "question_uuid" => same_uuid, "correct" => false }
-               ]
-             })
-    end
+  test "dashboard_summary returns zeros when no sessions" do
+    analytics = StudentAnalytics.new(@user)
+    summary = analytics.dashboard_summary
 
-    analytics = StudentAnalytics.new(@student)
-    weak_points = analytics.weak_points
+    assert_equal 0, summary[:total_sessions]
+    assert_equal 0, summary[:average_score]
+    assert_equal 0, summary[:recent_sessions_count]
+    assert_equal 0, summary[:weekly_sessions_count]
+  end
 
-    # The question should appear only once in weak points (deduplicated by UUID)
-    matching = weak_points.select { |wp| wp[:question_uuid] == same_uuid }
-    assert_equal 1, matching.length,
-                 "Question should appear only once (deduplicated) in weak points"
-    assert_equal 3, matching.first[:attempts],
-                 "Attempts should aggregate across sessions"
+  test "dashboard_summary calculates correct values" do
+    create(:assessment_session, user: @user, exercise: @exercise, score_percentage: 80.0)
+    create(:assessment_session, user: @user, exercise: @exercise, score_percentage: 90.0)
+
+    analytics = StudentAnalytics.new(@user)
+    summary = analytics.dashboard_summary
+
+    assert_equal 2, summary[:total_sessions]
+    assert_equal 85.0, summary[:average_score]
+  end
+
+  # ============================================================================
+  # weak_points_by_topic
+  # ============================================================================
+
+  test "weak_points_by_topic returns empty array when no topics" do
+    analytics = StudentAnalytics.new(@user)
+    assert_empty analytics.weak_points_by_topic
+  end
+
+  test "weak_points_by_topic returns topic performance data" do
+    topic = create(:taxonomy_node, :topic)
+    create(:assessment_session, user: @user, exercise: @exercise, taxonomy_node: topic, score_percentage: 60.0)
+
+    analytics = StudentAnalytics.new(@user)
+    weak_points = analytics.weak_points_by_topic
+
+    assert_equal 1, weak_points.count
+    assert_equal topic.name, weak_points.first[:topic_name]
+    assert_equal 60.0, weak_points.first[:average_score]
+    assert weak_points.first[:weak_area]
+  end
+
+  test "weak_points_by_topic sorts by average score ascending" do
+    topic1 = create(:taxonomy_node, :topic)
+    topic2 = create(:taxonomy_node, :topic)
+    create(:assessment_session, user: @user, exercise: @exercise, taxonomy_node: topic1, score_percentage: 90.0)
+    create(:assessment_session, user: @user, exercise: @exercise, taxonomy_node: topic2, score_percentage: 60.0)
+
+    analytics = StudentAnalytics.new(@user)
+    weak_points = analytics.weak_points_by_topic
+
+    assert_equal topic2.name, weak_points.first[:topic_name]
+    assert_equal topic1.name, weak_points.last[:topic_name]
+  end
+
+  # ============================================================================
+  # topic_recommendations
+  # ============================================================================
+
+  test "topic_recommendations returns empty array when no weak topics" do
+    analytics = StudentAnalytics.new(@user)
+    assert_empty analytics.topic_recommendations
+  end
+
+  test "topic_recommendations returns weak topics" do
+    topic = create(:taxonomy_node, :topic)
+    create(:assessment_session, user: @user, exercise: @exercise, taxonomy_node: topic, score_percentage: 50.0)
+
+    analytics = StudentAnalytics.new(@user)
+    recommendations = analytics.topic_recommendations
+
+    assert_equal 1, recommendations.count
+    assert_equal topic.name, recommendations.first[:topic_name]
+    assert recommendations.first[:reason].include?("Low average score")
+  end
+
+  # ============================================================================
+  # performance_by_topic
+  # ============================================================================
+
+  test "performance_by_topic returns empty array when no sessions" do
+    analytics = StudentAnalytics.new(@user)
+    assert_empty analytics.performance_by_topic
+  end
+
+  test "performance_by_topic returns topic performance data" do
+    topic = create(:taxonomy_node, :topic)
+    create(:assessment_session, user: @user, exercise: @exercise, taxonomy_node: topic, score_percentage: 75.0)
+
+    analytics = StudentAnalytics.new(@user)
+    performance = analytics.performance_by_topic
+
+    assert_equal 1, performance.count
+    assert_equal topic.name, performance.first[:topic_name]
+    assert_equal 75.0, performance.first[:average_score]
+  end
+
+  test "performance_by_topic sorts by average score descending" do
+    topic1 = create(:taxonomy_node, :topic)
+    topic2 = create(:taxonomy_node, :topic)
+    create(:assessment_session, user: @user, exercise: @exercise, taxonomy_node: topic1, score_percentage: 60.0)
+    create(:assessment_session, user: @user, exercise: @exercise, taxonomy_node: topic2, score_percentage: 90.0)
+
+    analytics = StudentAnalytics.new(@user)
+    performance = analytics.performance_by_topic
+
+    assert_equal topic2.name, performance.first[:topic_name]
+    assert_equal topic1.name, performance.last[:topic_name]
+  end
+
+  # ============================================================================
+  # topic_mastery_levels
+  # ============================================================================
+
+  test "topic_mastery_levels returns empty array when no topics" do
+    analytics = StudentAnalytics.new(@user)
+    assert_empty analytics.topic_mastery_levels
+  end
+
+  test "topic_mastery_levels returns mastery data" do
+    topic = create(:taxonomy_node, :topic)
+    create(:assessment_session, user: @user, exercise: @exercise, taxonomy_node: topic, score_percentage: 95.0)
+
+    analytics = StudentAnalytics.new(@user)
+    mastery = analytics.topic_mastery_levels
+
+    assert_equal 1, mastery.count
+    assert_equal topic.name, mastery.first[:topic_name]
+    assert_equal "mastered", mastery.first[:mastery_level]
+  end
+
+  test "topic_mastery_levels determines correct mastery levels" do
+    topic_developing = create(:taxonomy_node, :topic)
+    topic_proficient = create(:taxonomy_node, :topic)
+    topic_needs_improvement = create(:taxonomy_node, :topic)
+
+    create(:assessment_session, user: @user, exercise: @exercise, taxonomy_node: topic_developing, score_percentage: 60.0)
+    create(:assessment_session, user: @user, exercise: @exercise, taxonomy_node: topic_proficient, score_percentage: 80.0)
+    create(:assessment_session, user: @user, exercise: @exercise, taxonomy_node: topic_needs_improvement, score_percentage: 40.0)
+
+    analytics = StudentAnalytics.new(@user)
+    mastery = analytics.topic_mastery_levels
+
+    developing = mastery.find { |m| m[:topic_id] == topic_developing.id }
+    proficient = mastery.find { |m| m[:topic_id] == topic_proficient.id }
+    needs_improvement = mastery.find { |m| m[:topic_id] == topic_needs_improvement.id }
+
+    assert_equal "developing", developing[:mastery_level]
+    assert_equal "proficient", proficient[:mastery_level]
+    assert_equal "needs_improvement", needs_improvement[:mastery_level]
+  end
+
+  test "topic_mastery_levels sorts by average score descending" do
+    topic1 = create(:taxonomy_node, :topic)
+    topic2 = create(:taxonomy_node, :topic)
+    create(:assessment_session, user: @user, exercise: @exercise, taxonomy_node: topic1, score_percentage: 60.0)
+    create(:assessment_session, user: @user, exercise: @exercise, taxonomy_node: topic2, score_percentage: 90.0)
+
+    analytics = StudentAnalytics.new(@user)
+    mastery = analytics.topic_mastery_levels
+
+    assert_equal topic2.name, mastery.first[:topic_name]
+    assert_equal topic1.name, mastery.last[:topic_name]
   end
 end

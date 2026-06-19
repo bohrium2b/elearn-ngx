@@ -36,7 +36,9 @@ class TopicExercisesController < ApplicationController
   private
 
   def set_topic
+    # rubocop:disable Rails/DynamicFindBy
     @topic = TaxonomyNode.find_by_param(params[:taxonomy_node_id]) if params[:taxonomy_node_id]
+    # rubocop:enable Rails/DynamicFindBy
   end
 
   def set_topic_exercise

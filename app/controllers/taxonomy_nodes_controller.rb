@@ -1,21 +1,18 @@
 # frozen_string_literal: true
 
 class TaxonomyNodesController < ApplicationController
-  before_action :set_taxonomy_node, only: %i[show update destroy descendants ancestors questions]
+  before_action :set_taxonomy_node, only: %i[show update destroy descendants ancestors questions all_resources]
 
-  # GET /taxonomy
   def index
     @nodes = TaxonomyNode.roots.ordered.includes(:children)
     render json: serialize_tree(@nodes)
   end
 
-  # GET /taxonomy/:id
   def show
     Rails.logger.info "Showing taxonomy node: #{@taxonomy_node.inspect}"
     render json: serialize_node(@taxonomy_node)
   end
 
-  # POST /taxonomy
   def create
     @node = TaxonomyNode.new(taxonomy_node_params)
 
@@ -26,44 +23,45 @@ class TaxonomyNodesController < ApplicationController
     end
   end
 
-  # PATCH/PUT /taxonomy/:id
   def update
-    if @node.update(taxonomy_node_params)
-      render json: serialize_node(@node)
+    if @taxonomy_node.update(taxonomy_node_params)
+      render json: serialize_node(@taxonomy_node)
     else
-      render json: { errors: @node.errors.full_messages }, status: :unprocessable_content
+      render json: { errors: @taxonomy_node.errors.full_messages }, status: :unprocessable_content
     end
   end
 
-  # DELETE /taxonomy/:id
   def destroy
-    @node.destroy
+    @taxonomy_node.destroy
     head :no_content
   end
 
-  # GET /taxonomy/:id/descendants
   def descendants
-    render json: serialize_tree(@node.descendants)
+    render json: serialize_tree(@taxonomy_node.descendants)
   end
 
-  # GET /taxonomy/:id/ancestors
   def ancestors
-    render json: @node.ancestors.map { |a| serialize_node(a) }
+    render json: @taxonomy_node.ancestors.map { |a| serialize_node(a) }
   end
 
-  # GET /taxonomy/:id/questions
   def questions
     @questions = @taxonomy_node.questions.includes(:tags)
     render json: @questions.map { |q| serialize_question(q) }
   end
 
-  # GET /taxonomy/tree
+  def all_resources
+    render json: {
+      tags: @taxonomy_node.tags.map { |t| serialize_tag(t) },
+      questions: @taxonomy_node.questions.map { |q| serialize_question(q) },
+      exercises: @taxonomy_node.exercises.map { |e| serialize_exercise(e) }
+    }
+  end
+
   def tree
     @courses = TaxonomyNode.courses.roots.ordered
     render json: serialize_full_tree(@courses)
   end
 
-  # GET /taxonomy/by_level
   def by_level
     level = params[:level]
     return render json: { error: "Invalid level" }, status: :bad_request unless TaxonomyNode.levels.key?(level)
@@ -76,7 +74,9 @@ class TaxonomyNodesController < ApplicationController
 
   def set_taxonomy_node
     Rails.logger.info "Finding taxonomy node with id: #{params[:id]}"
+    # rubocop:disable Rails/DynamicFindBy
     @taxonomy_node = TaxonomyNode.find_by_param(params[:id])
+    # rubocop:enable Rails/DynamicFindBy
     Rails.logger.info "Found taxonomy node: #{@taxonomy_node.inspect}" if @taxonomy_node
     return if @taxonomy_node
 
@@ -123,20 +123,32 @@ class TaxonomyNodesController < ApplicationController
   def serialize_full_tree(courses)
     courses.map do |course|
       serialized = serialize_node(course)
-      serialized[:parts] = course.children.parts.ordered.map do |part|
-        part_serialized = serialize_node(part)
-        part_serialized[:units] = part.children.units.ordered.map do |unit|
-          unit_serialized = serialize_node(unit)
-          unit_serialized[:topics] = unit.children.topics.ordered.map do |topic|
-            topic_serialized = serialize_node(topic)
-            topic_serialized[:questions] = topic.questions.map { |q| serialize_question(q) }
-            topic_serialized
-          end
-          unit_serialized
-        end
-        part_serialized
-      end
+      serialized[:parts] = serialize_course_parts(course)
       serialized
+    end
+  end
+
+  def serialize_course_parts(course)
+    course.children.parts.ordered.map do |part|
+      part_serialized = serialize_node(part)
+      part_serialized[:units] = serialize_part_units(part)
+      part_serialized
+    end
+  end
+
+  def serialize_part_units(part)
+    part.children.units.ordered.map do |unit|
+      unit_serialized = serialize_node(unit)
+      unit_serialized[:topics] = serialize_unit_topics(unit)
+      unit_serialized
+    end
+  end
+
+  def serialize_unit_topics(unit)
+    unit.children.topics.ordered.map do |topic|
+      topic_serialized = serialize_node(topic)
+      topic_serialized[:questions] = topic.questions.map { |q| serialize_question(q) }
+      topic_serialized
     end
   end
 
@@ -149,6 +161,27 @@ class TaxonomyNodesController < ApplicationController
       question: question.config_data&.dig("question"),
       type: question.config_data&.dig("type"),
       tags: question.tags.map { |t| { id: t.id, name: t.name, color: t.color } }
+    }
+  end
+
+  def serialize_tag(tag)
+    {
+      id: tag.id,
+      name: tag.name,
+      slug: tag.slug,
+      color: tag.color,
+      parent_id: tag.parent_id
+    }
+  end
+
+  def serialize_exercise(exercise)
+    {
+      id: exercise.id,
+      name: exercise.title,
+      slug: exercise.slug,
+      uuid: exercise.uuid,
+      path_identifier: exercise.path_identifier,
+      spec: exercise.spec
     }
   end
 end

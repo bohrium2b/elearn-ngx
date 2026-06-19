@@ -18,8 +18,53 @@ class TelemetryProcessor
 
     score = calculate_score
     tag_registry = build_tag_registry
+    topic_registry = build_topic_registry
 
-    success_result(exercise, score, tag_registry)
+    success_result(exercise, score, tag_registry, topic_registry)
+  end
+
+  def build_topic_registry
+    question_ids = @payload[:question_responses].pluck(:question_uuid).compact
+    return {} if question_ids.blank?
+
+    questions = Question.where(uuid: question_ids)
+                        .includes(:tags, :content_assignments)
+
+    registry = {}
+
+    questions.each do |question|
+      direct_topics = question.content_assignments
+                              .filter_map(&:taxonomy_node)
+                              .select(&:topic?)
+      tag_topics = question.tags.flat_map(&:topics).uniq
+      all_topics = (direct_topics + tag_topics).uniq
+
+      registry[question.uuid] = all_topics.map do |topic|
+        {
+          topic_id: topic.id,
+          topic_name: topic.name,
+          topic_slug: topic.slug,
+          path_identifier: topic.path_identifier
+        }
+      end
+    end
+
+    registry
+  end
+
+  def process_with_topics(assessment_session)
+    telemetry_data = assessment_session.telemetry_data || {}
+    question_ids = telemetry_data["question_responses"]&.pluck("question_uuid") || []
+
+    topic_registry = build_topic_registry_from_uuids(question_ids)
+    telemetry_data["topic_registry"] = topic_registry
+    telemetry_data["topic_performance"] = calculate_topic_performance(
+      topic_registry,
+      telemetry_data["question_responses"] || []
+    )
+
+    assessment_session.update(telemetry_data: telemetry_data)
+    telemetry_data
   end
 
   private
@@ -66,7 +111,7 @@ class TelemetryProcessor
 
   def build_tag_registry
     registry = {}
-    question_ids = @payload[:question_responses].map { |qr| qr[:question_uuid] }.compact
+    question_ids = @payload[:question_responses].pluck(:question_uuid).compact
 
     Question.where(uuid: question_ids).find_each do |question|
       question.tags.each do |tag|
@@ -96,7 +141,7 @@ class TelemetryProcessor
     path
   end
 
-  def success_result(exercise, score, tag_registry)
+  def success_result(exercise, score, tag_registry, topic_registry)
     {
       success: true,
       exercise: exercise,
@@ -107,7 +152,8 @@ class TelemetryProcessor
       telemetry_data: {
         "session_metadata" => @payload[:session_metadata] || {},
         "question_responses" => @payload[:question_responses],
-        "tag_registry" => tag_registry
+        "tag_registry" => tag_registry,
+        "topic_registry" => topic_registry
       }
     }
   end
@@ -118,11 +164,67 @@ class TelemetryProcessor
 
   def parse_completed_at
     if @payload[:completed_at].is_a?(String)
-      Time.parse(@payload[:completed_at])
+      Time.zone.parse(@payload[:completed_at])
     else
       @payload[:completed_at] || Time.current
     end
   rescue ArgumentError
     Time.current
+  end
+
+  def build_topic_registry_from_uuids(question_uuids)
+    return {} if question_uuids.blank?
+
+    questions = Question.where(uuid: question_uuids)
+                        .includes(:tags, :content_assignments)
+
+    registry = {}
+
+    questions.each do |question|
+      direct_topics = question.content_assignments
+                              .filter_map(&:taxonomy_node)
+                              .select(&:topic?)
+      tag_topics = question.tags.flat_map(&:topics).uniq
+      all_topics = (direct_topics + tag_topics).uniq
+
+      registry[question.uuid] = all_topics.map do |topic|
+        {
+          topic_id: topic.id,
+          topic_name: topic.name,
+          topic_slug: topic.slug,
+          path_identifier: topic.path_identifier
+        }
+      end
+    end
+
+    registry
+  end
+
+  def calculate_topic_performance(topic_registry, responses)
+    topic_scores = {}
+
+    responses.each do |response|
+      q_id = response["question_uuid"] || response[:question_uuid]
+      next unless q_id
+
+      topics = topic_registry[q_id.to_s] || []
+      correct = response["correct"] == true || response[:correct] == true
+
+      topics.each do |topic|
+        topic_id = topic[:topic_id]
+        topic_scores[topic_id] ||= { correct: 0, total: 0, topic_name: topic[:topic_name] }
+        topic_scores[topic_id][:total] += 1
+        topic_scores[topic_id][:correct] += 1 if correct
+      end
+    end
+
+    topic_scores.transform_values do |scores|
+      {
+        topic_name: scores[:topic_name],
+        correct: scores[:correct],
+        total: scores[:total],
+        percentage: scores[:total].positive? ? ((scores[:correct].to_f / scores[:total]) * 100).round(2) : 0
+      }
+    end
   end
 end

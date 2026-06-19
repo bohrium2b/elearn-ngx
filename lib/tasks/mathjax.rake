@@ -1,8 +1,10 @@
+# frozen_string_literal: true
+
 require "fileutils"
 
 namespace :mathjax do
   desc "Copy MathJax v4 bundle into public/mathjax so Rails serves worker files"
-  task :copy do
+  task copy: :environment do
     src = Rails.root.join("node_modules/@mathjax/src/bundle")
     dest = Rails.public_path.join("mathjax")
 

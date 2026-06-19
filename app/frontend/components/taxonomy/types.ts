@@ -74,6 +74,48 @@ export interface Topic extends TaxonomyNode {
   tags: Tag[];
 }
 
+// Exercise interface for topic-exercise associations
+export interface Exercise {
+  id: number;
+  name: string;
+  slug: string;
+  uuid: string;
+  path_identifier: string;
+  spec: {
+    description?: string;
+    selection_rules?: any[];
+  };
+}
+
+// TopicTag interface for topic-tag associations
+export interface TopicTag {
+  id: number;
+  taxonomy_node_id: number;
+  tag_id: number;
+  tag_name: string;
+  tag_color: string;
+  tag_slug: string;
+  created_at: string;
+}
+
+// TopicExercise interface for topic-exercise associations
+export interface TopicExercise {
+  id: number;
+  taxonomy_node_id: number;
+  exercise_id: number;
+  exercise_name: string;
+  exercise_slug: string;
+  position: number;
+  created_at: string;
+}
+
+// AllResources interface for the all_resources API response
+export interface AllResources {
+  tags: Tag[];
+  questions: Question[];
+  exercises: Exercise[];
+}
+
 export interface UserProgress {
   total_topics: number;
   completed_topics: number;

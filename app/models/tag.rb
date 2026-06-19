@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 class Tag < ApplicationRecord
   before_validation :ensure_uuid, on: :create
   before_validation :generate_slug, :assign_random_color, on: :create
@@ -7,6 +9,8 @@ class Tag < ApplicationRecord
   belongs_to :taxonomy_node, optional: true
   has_many :children, class_name: "Tag", foreign_key: "parent_id", dependent: :destroy, inverse_of: :parent
   has_and_belongs_to_many :questions
+  has_many :topic_tags, dependent: :destroy
+  has_many :topics, through: :topic_tags, source: :taxonomy_node
 
   validates :name, presence: true
   validates :slug, presence: true, format: { with: /\Atag-[a-z0-9-]+\z/ }
@@ -26,16 +30,20 @@ class Tag < ApplicationRecord
     (questions + all_descendants.flat_map(&:questions)).uniq.count
   end
 
-  def is_ancestor_of?(other_tag)
+  def ancestor_of?(other_tag)
     return false if other_tag.nil?
 
     current_parent = other_tag.parent
     while current_parent
       return true if current_parent == self
+
       current_parent = current_parent.parent
     end
     false
   end
+
+  # Keep backward compatibility
+  alias is_ancestor_of? ancestor_of?
 
   private
 
@@ -44,7 +52,7 @@ class Tag < ApplicationRecord
   end
 
   def generate_slug
-    return if name.blank?
+    return if name.blank? || slug.present?
 
     self.slug = "tag-#{name.parameterize}"
   end

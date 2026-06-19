@@ -1,0 +1,26 @@
+<div class="container mx-auto px-4 py-8">
+  <div class="card bg-white shadow-xl">
+    <div class="card-body">
+      <h1 class="card-title text-2xl"><%= @exercise.title %></h1>
+      <p class="text-sm text-gray-500">Created: <%= @exercise.created_at.strftime("%B %d, %Y") %></p>
+
+      <% if @exercise.spec.present? %>
+        <div class="mt-4">
+          <h2 class="text-lg font-semibold">Exercise Configuration</h2>
+          <pre class="bg-gray-100 p-4 rounded mt-2 overflow-auto"><%= JSON.pretty_generate(@exercise.spec) %></pre>
+        </div>
+      <% end %>
+
+      <div class="card-actions justify-end mt-6">
+        <% if current_user&.admin? || current_user&.content_author? %>
+          <a href="<%= edit_exercise_path(@exercise) %>" class="btn btn-secondary">
+            Edit
+          </a>
+        <% end %>
+        <a href="<%= start_exercise_path(@exercise) %>" class="btn btn-primary">
+          Start Exercise
+        </a>
+      </div>
+    </div>
+  </div>
+</div>

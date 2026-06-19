@@ -1,9 +1,11 @@
+# frozen_string_literal: true
+
 require "active_support/core_ext/integer/time"
 
 Rails.application.configure do
   # ── Code Loading ──────────────────────────────────────────────────────────
   config.enable_reloading = false
-  config.eager_load = false
+  config.eager_load = true
   config.consider_all_requests_local = true
   config.action_controller.perform_caching = false
   config.cache_store = :null_store
@@ -19,7 +21,7 @@ Rails.application.configure do
   config.log_level = :debug
 
   # ── Assets ────────────────────────────────────────────────────────────────
-  config.assets.paths << Rails.root.join("test", "fixtures", "files")
+  config.assets.paths << Rails.root.join("test/fixtures/files")
 
   # ── Raise errors on unpermitted parameters ────────────────────────────────
   config.action_controller.raise_on_missing_callback_actions = true

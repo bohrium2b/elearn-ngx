@@ -1,50 +1,47 @@
+# frozen_string_literal: true
+
 class Exercise < ApplicationRecord
   before_validation :ensure_uuid, on: :create
   before_validation :generate_slug, on: :create
 
+  belongs_to :primary_topic, class_name: "TaxonomyNode", optional: true
+  has_many :topic_exercises, dependent: :destroy
+  has_many :topics, through: :topic_exercises, source: :taxonomy_node
+
   validates :title, presence: true
   validates :slug, presence: true, uniqueness: true
+  validates :spec, presence: true
   validate :spec_structure
   validate :over_selection_boundary_guard
   validate :exclusive_family_overlap_guard
 
-  # Scope to exclude practice exercises from regular listings
   scope :regular, -> { where(is_practice: false) }
   scope :practice, -> { where(is_practice: true) }
 
-  # Find by UUID, slug, ID, or combined format (<uuid>-x:<slug>)
-  # Priority: combined format > UUID > numeric ID > slug
   def self.find_by_uuid_or_slug_or_id(param)
     return nil if param.blank?
 
-    # Check if it's a combined format: <uuid>-x:<slug> (e.g., "abc12345-...-1:exercise-algebra")
-    # This matches the format used by questions and tags
     combined_match = param.match(/\A([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})-(\d+):(.+)\z/i)
     if combined_match
       find_by(uuid: combined_match[1])
-    # Check if it's a UUID format (8-4-4-4-12 hex format)
     elsif param.match?(/\A[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\z/i)
       find_by(uuid: param)
-    # Check if it's a numeric ID (digits only)
     elsif param.match?(/\A\d+\z/)
       find_by(id: param)
-    # Otherwise treat as slug
     else
       find_by(slug: param)
     end
   end
 
-  # Generate a URL-friendly slug from the title
   def generate_slug
     return if slug.present? || title.blank?
 
     base_slug = title.parameterize
     base_slug = "exercise-#{id}" if base_slug.blank?
-    
+
     unique_slug = base_slug
     counter = 1
 
-    # Ensure uniqueness
     while Exercise.exists?(slug: unique_slug)
       unique_slug = "#{base_slug}-#{counter}"
       counter += 1
@@ -53,13 +50,16 @@ class Exercise < ApplicationRecord
     self.slug = unique_slug
   end
 
-  # Update slug if title changes
   def should_generate_new_slug?
     title_changed? && slug.blank?
   end
 
   def practice?
     is_practice == true
+  end
+
+  def path_identifier
+    "#{uuid}-x:#{slug}"
   end
 
   private
@@ -72,23 +72,36 @@ class Exercise < ApplicationRecord
       return
     end
 
-    spec["selection_rules"].each do |rule|
-      unless rule.is_a?(Hash)
-        errors.add(:spec, "selection rule must be a hash")
-        next
-      end
-
-      case rule["type"]
-      when "dynamic_tag"
-        unless rule["tag_uuid"].present? && rule["count"].is_a?(Integer) && rule["count"] > 0 && rule["strategy"] == "random"
-          errors.add(:spec, "dynamic_tag rule is invalid: #{rule.inspect}")
-        end
-      when "static_question"
-        errors.add(:spec, "static_question rule is invalid: #{rule.inspect}") unless rule["question_uuid"].present?
-      else
-        errors.add(:spec, "unknown selection rule type: #{rule['type']}")
-      end
+    if spec["selection_rules"].empty?
+      errors.add(:spec, "selection_rules cannot be empty")
+      return
     end
+
+    spec["selection_rules"].each do |rule|
+      validate_selection_rule(rule)
+    end
+  end
+
+  def validate_selection_rule(rule)
+    unless rule.is_a?(Hash)
+      errors.add(:spec, "selection rule must be a hash")
+      return
+    end
+
+    case rule["type"]
+    when "dynamic_tag"
+      validate_dynamic_tag_rule(rule)
+    when "static_question"
+      errors.add(:spec, "static_question rule is invalid: #{rule.inspect}") if rule["question_uuid"].blank?
+    else
+      errors.add(:spec, "unknown selection rule type: #{rule['type']}")
+    end
+  end
+
+  def validate_dynamic_tag_rule(rule)
+    return if rule["tag_uuid"].present? && rule["count"].is_a?(Integer) && rule["count"].positive? && rule["strategy"] == "random"
+
+    errors.add(:spec, "dynamic_tag rule is invalid: #{rule.inspect}")
   end
 
   def over_selection_boundary_guard
@@ -114,8 +127,11 @@ class Exercise < ApplicationRecord
     return if spec.blank? || !spec["selection_rules"].is_a?(Array)
 
     dynamic_tag_rules = spec["selection_rules"].select { |r| r["type"] == "dynamic_tag" }
+    rule_tags_with_ancestors = build_rule_tags_with_ancestors(dynamic_tag_rules)
+    check_family_overlap(dynamic_tag_rules, rule_tags_with_ancestors)
+  end
 
-    # Store tags and their ancestors for quick lookup
+  def build_rule_tags_with_ancestors(dynamic_tag_rules)
     rule_tags_with_ancestors = {}
 
     dynamic_tag_rules.each do |rule|
@@ -130,15 +146,19 @@ class Exercise < ApplicationRecord
       end
     end
 
+    rule_tags_with_ancestors
+  end
+
+  def check_family_overlap(dynamic_tag_rules, rule_tags_with_ancestors)
     dynamic_tag_rules.each do |rule1|
       tag1_info = rule_tags_with_ancestors[rule1["tag_uuid"]]
-      next unless tag1_info # Skip if tag1 was not found
+      next unless tag1_info
 
       dynamic_tag_rules.each do |rule2|
-        next if rule1 == rule2 # Don't compare a rule with itself
+        next if rule1 == rule2
 
         tag2_info = rule_tags_with_ancestors[rule2["tag_uuid"]]
-        next unless tag2_info # Skip if tag2 was not found
+        next unless tag2_info
 
         tag1 = tag1_info[:tag]
         tag2 = tag2_info[:tag]

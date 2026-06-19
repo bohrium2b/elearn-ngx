@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 # Session cookie configuration
 # Development: relaxed settings for local Vite dev server compatibility
 # Production: secure flags enabled for security

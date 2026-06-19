@@ -1,33 +1,68 @@
+# frozen_string_literal: true
+
 require "test_helper"
 
 class AnalyticsPolicyTest < ActiveSupport::TestCase
-  def setup
+  setup do
     @student = create(:user, :student)
-    @content_author = create(:user, :content_author)
     @instructor = create(:user, :instructor)
     @admin = create(:user, :admin)
   end
 
-  def test_index
-    assert_not AnalyticsPolicy.new(nil, :analytics).index?
-    assert_not AnalyticsPolicy.new(@student, :analytics).index?
-    assert_not AnalyticsPolicy.new(@content_author, :analytics).index?
-    assert AnalyticsPolicy.new(@instructor, :analytics).index?
-    assert AnalyticsPolicy.new(@admin, :analytics).index?
+  # ============================================================================
+  # Dashboard
+  # ============================================================================
+
+  test "student can view dashboard" do
+    policy = AnalyticsPolicy.new(@student, :analytics)
+    assert policy.dashboard?
   end
 
-  def test_show
-    assert_not AnalyticsPolicy.new(nil, :analytics).show?
-    assert_not AnalyticsPolicy.new(@student, :analytics).show?
-    assert AnalyticsPolicy.new(@instructor, :analytics).show?
-    assert AnalyticsPolicy.new(@admin, :analytics).show?
+  test "instructor can view dashboard" do
+    policy = AnalyticsPolicy.new(@instructor, :analytics)
+    assert policy.dashboard?
   end
 
-  def test_performance_logs
-    assert_not AnalyticsPolicy.new(nil, :analytics).performance_logs?
-    assert_not AnalyticsPolicy.new(@student, :analytics).performance_logs?
-    assert_not AnalyticsPolicy.new(@content_author, :analytics).performance_logs?
-    assert AnalyticsPolicy.new(@instructor, :analytics).performance_logs?
-    assert AnalyticsPolicy.new(@admin, :analytics).performance_logs?
+  test "admin can view dashboard" do
+    policy = AnalyticsPolicy.new(@admin, :analytics)
+    assert policy.dashboard?
+  end
+
+  # ============================================================================
+  # Cohort
+  # ============================================================================
+
+  test "student cannot view cohort" do
+    policy = AnalyticsPolicy.new(@student, :analytics)
+    assert_not policy.cohort?
+  end
+
+  test "instructor can view cohort" do
+    policy = AnalyticsPolicy.new(@instructor, :analytics)
+    assert policy.cohort?
+  end
+
+  test "admin can view cohort" do
+    policy = AnalyticsPolicy.new(@admin, :analytics)
+    assert policy.cohort?
+  end
+
+  # ============================================================================
+  # Review
+  # ============================================================================
+
+  test "student can review own sessions" do
+    policy = AnalyticsPolicy.new(@student, :analytics)
+    assert policy.review?
+  end
+
+  test "instructor can review any session" do
+    policy = AnalyticsPolicy.new(@instructor, :analytics)
+    assert policy.review?
+  end
+
+  test "admin can review any session" do
+    policy = AnalyticsPolicy.new(@admin, :analytics)
+    assert policy.review?
   end
 end

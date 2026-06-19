@@ -1,7 +1,108 @@
 # frozen_string_literal: true
 
 class AnalyticsAggregator
-  # High-level cohort metrics
+  # Instance methods for topic-based analytics
+  def topic_performance_matrix(user = nil)
+    topics = TaxonomyNode.topics
+    topics.map do |topic|
+      sessions = topic.assessment_sessions
+      sessions = sessions.for_user(user) if user
+
+      total_sessions = sessions.count
+      avg_score = total_sessions.positive? ? (sessions.average(:score_percentage) || 0).to_f : 0.0
+      completion_rate = if total_sessions.positive?
+                          ((sessions.where.not(score_percentage: nil).count.to_f / total_sessions) * 100).round(2)
+                        else
+                          0.0
+                        end
+
+      {
+        topic_id: topic.id,
+        topic_name: topic.name,
+        total_sessions: total_sessions,
+        average_score: avg_score.round(2),
+        completion_rate: completion_rate
+      }
+    end
+  end
+
+  def topic_average_score(topic, user = nil)
+    sessions = topic.assessment_sessions
+    sessions = sessions.for_user(user) if user
+
+    total_sessions = sessions.count
+    avg_score = total_sessions.positive? ? (sessions.average(:score_percentage) || 0).to_f : 0.0
+    recent_sessions = sessions.recent.limit(5).count
+
+    {
+      topic_id: topic.id,
+      topic_name: topic.name,
+      average_score: avg_score.round(2),
+      total_sessions: total_sessions,
+      recent_sessions: recent_sessions
+    }
+  end
+
+  def system_topic_performance_matrix
+    topics = TaxonomyNode.topics
+    matrix = topics.map do |topic|
+      sessions = topic.assessment_sessions
+      total_sessions = sessions.count
+      avg_score = total_sessions.positive? ? (sessions.average(:score_percentage) || 0).to_f : 0.0
+      unique_users = sessions.select(:user_id).distinct.count
+      completion_rate = if total_sessions.positive?
+                          ((sessions.where.not(score_percentage: nil).count.to_f / total_sessions) * 100).round(2)
+                        else
+                          0.0
+                        end
+
+      {
+        topic_id: topic.id,
+        topic_name: topic.name,
+        total_sessions: total_sessions,
+        average_score: avg_score.round(2),
+        unique_users: unique_users,
+        completion_rate: completion_rate
+      }
+    end
+
+    # Sort by average score descending
+    matrix.sort_by { |m| -m[:average_score] }
+  end
+
+  def topic_difficulty_ranking
+    topics = TaxonomyNode.topics
+    ranking = []
+
+    topics.each do |topic|
+      sessions = topic.assessment_sessions
+      total_sessions = sessions.count
+
+      # Exclude topics with insufficient data (less than 5 sessions)
+      next if total_sessions < 5
+
+      avg_score = (sessions.average(:score_percentage) || 0).to_f
+
+      difficulty = case avg_score
+                   when 0...40 then "hard"
+                   when 40...70 then "medium"
+                   else "easy"
+                   end
+
+      ranking << {
+        topic_id: topic.id,
+        topic_name: topic.name,
+        average_score: avg_score.round(2),
+        total_sessions: total_sessions,
+        difficulty: difficulty
+      }
+    end
+
+    # Sort by average score ascending (hardest first)
+    ranking.sort_by { |r| r[:average_score] }
+  end
+
+  # Class methods
   def self.cohort_metrics
     sessions = AssessmentSession.recent
 
@@ -16,60 +117,24 @@ class AnalyticsAggregator
     }
   end
 
-  # Hierarchical tag performance matrix
   def self.tag_performance_matrix
     root_tags = Tag.where(parent_id: nil).includes(:children)
-
     root_tags.map { |tag| build_tag_node(tag) }
   end
 
-  # Item discrimination: flag questions with anomalous failure rates
   def self.item_discrimination_metrics
-    question_stats = {}
-
-    AssessmentSession.find_each do |session|
-      session.question_responses.each do |qr|
-        uuid = qr["question_uuid"]
-        question_stats[uuid] ||= { correct: 0, total: 0 }
-        question_stats[uuid][:total] += 1
-        question_stats[uuid][:correct] += 1 if qr["correct"] == true
-      end
-    end
-
-    question_stats.map do |_uuid, stats|
-      failure_rate = 1.0 - (stats[:correct].to_f / stats[:total])
-      {
-        question_uuid: _uuid,
-        total_attempts: stats[:total],
-        correct_count: stats[:correct],
-        failure_rate: (failure_rate * 100).round(2),
-        flagged: flag_question?(stats[:total], failure_rate)
-      }
-    end.sort_by { |m| -m[:failure_rate] }
+    question_stats = AnalyticsAggregatorHelpers.build_question_stats
+    AnalyticsAggregatorHelpers.format_question_stats(question_stats)
   end
 
-  # Average performance score for a specific tag across all students
   def self.tag_average_score(tag_uuid)
     tag = Tag.find_by(uuid: tag_uuid)
     return nil unless tag
 
-    descendant_uuids = tag.all_descendants.map(&:uuid) + [tag.uuid]
-    question_uuids = Question.joins(:tags).where(tags: { uuid: descendant_uuids }).pluck(:uuid).uniq
-
+    question_uuids = AnalyticsAggregatorHelpers.fetch_tag_question_uuids(tag)
     return nil if question_uuids.empty?
 
-    total_correct = 0
-    total_responses = 0
-
-    AssessmentSession.find_each do |session|
-      session.question_responses.each do |qr|
-        next unless question_uuids.include?(qr["question_uuid"])
-
-        total_responses += 1
-        total_correct += 1 if qr["correct"] == true
-      end
-    end
-
+    total_correct, total_responses = AnalyticsAggregatorHelpers.calculate_tag_performance(question_uuids)
     return nil if total_responses.zero?
 
     {
@@ -80,8 +145,6 @@ class AnalyticsAggregator
       average_score: ((total_correct.to_f / total_responses) * 100).round(2)
     }
   end
-
-  private
 
   def self.calculate_median(sessions)
     scores = sessions.pluck(:score_percentage).compact.map(&:to_f).sort
@@ -114,7 +177,7 @@ class AnalyticsAggregator
 
   def self.completion_trend(sessions)
     sessions.reorder(nil)
-            .where("completed_at >= ?", 30.days.ago)
+            .where(completed_at: 30.days.ago..)
             .group("DATE(completed_at)")
             .count
   end
@@ -146,11 +209,5 @@ class AnalyticsAggregator
       total_responses: total_responses,
       children: tag.children.map { |child| build_tag_node(child) }
     }
-  end
-
-  def self.flag_question?(total_attempts, failure_rate)
-    return false if total_attempts < 5
-
-    failure_rate >= 0.9
   end
 end

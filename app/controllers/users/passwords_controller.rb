@@ -1,3 +1,7 @@
-class Users::PasswordsController < Devise::PasswordsController
-  layout "auth"
+# frozen_string_literal: true
+
+module Users
+  class PasswordsController < Devise::PasswordsController
+    layout "auth"
+  end
 end

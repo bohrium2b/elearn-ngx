@@ -32,8 +32,6 @@ import "bootstrap/dist/css/bootstrap.min.css";
 import $ from "jquery";
 if (!$.event) {
   // Ensure the event object exists
-  // @ts-expect-error - adding a non-standard property for compatibility
   $.event = {} as any;
 }
-// @ts-expect-error - jQuery internal API compatibility shim
 $.event.props = $.event.props || [];

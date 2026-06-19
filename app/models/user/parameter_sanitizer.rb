@@ -1,3 +1,6 @@
+# frozen_string_literal: true
+
+# rubocop:disable Style/ClassAndModuleChildren
 class User::ParameterSanitizer < Devise::ParameterSanitizer
   def initialize(*)
     super
@@ -16,3 +19,4 @@ class User::ParameterSanitizer < Devise::ParameterSanitizer
     end
   end
 end
+# rubocop:enable Style/ClassAndModuleChildren

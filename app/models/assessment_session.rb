@@ -3,13 +3,11 @@
 class AssessmentSession < ApplicationRecord
   belongs_to :user
   belongs_to :exercise
+  belongs_to :taxonomy_node, optional: true
 
   before_validation :ensure_uuid, on: :create
 
-  validates :user, presence: true
-  validates :exercise, presence: true
-  validates :score_percentage, presence: true,
-                               numericality: { greater_than_or_equal_to: 0, less_than_or_equal_to: 100 }
+  validates :score_percentage, numericality: { greater_than_or_equal_to: 0, less_than_or_equal_to: 100 }, allow_nil: true
   validates :completed_at, presence: true
   validates :telemetry_data, presence: true
   validates :uuid, presence: true, uniqueness: true
@@ -18,8 +16,8 @@ class AssessmentSession < ApplicationRecord
   scope :recent, -> { order(completed_at: :desc) }
   scope :for_user, ->(user) { where(user: user) }
   scope :for_exercise, ->(exercise) { where(exercise: exercise) }
-  scope :completed_after, ->(date) { where("completed_at >= ?", date) }
-  scope :completed_before, ->(date) { where("completed_at <= ?", date) }
+  scope :completed_after, ->(date) { where(completed_at: date..) }
+  scope :completed_before, ->(date) { where(completed_at: ..date) }
   scope :in_time_window, ->(duration) { completed_after(duration.ago) }
 
   # Accessors for structured telemetry data
@@ -37,7 +35,7 @@ class AssessmentSession < ApplicationRecord
 
   # Returns unique question UUIDs from this session
   def question_uuids
-    question_responses.map { |qr| qr["question_uuid"] }.compact.uniq
+    question_responses.pluck("question_uuid").compact.uniq
   end
 
   # Returns the count of correct responses

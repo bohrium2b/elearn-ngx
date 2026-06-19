@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 require "active_support/core_ext/integer/time"
 
 Rails.application.configure do
@@ -31,7 +33,7 @@ Rails.application.configure do
   # ── Logging ───────────────────────────────────────────────────────────────
   config.log_level = :debug
   config.log_tags = [:request_id]
-  config.logger = ActiveSupport::TaggedLogging.new(Logger.new(STDOUT))
+  config.logger = ActiveSupport::TaggedLogging.new(Logger.new($stdout))
 
   # ── Raise errors for missing translations ─────────────────────────────────
   config.i18n.raise_on_missing_translations = true

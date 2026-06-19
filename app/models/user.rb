@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 class User < ApplicationRecord
   rolify
 
@@ -12,7 +14,7 @@ class User < ApplicationRecord
   # Validations
   validates :username, presence: true, uniqueness: true,
                        length: { minimum: 3, maximum: 30 },
-                       format: { with: /\A[a-zA-Z0-9_]+\z/, message: "only allows letters, numbers, and underscores" }
+                       format: { with: /\A[a-zA-Z0-9_]+\z/, message: I18n.t("messages.only_allows_letters_numbers_underscores") }
   validates :email, presence: true, uniqueness: true
 
   # Callbacks

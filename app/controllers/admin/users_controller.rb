@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 module Admin
   class UsersController < ApplicationController
     before_action :authenticate_user!
@@ -7,16 +9,31 @@ module Admin
     def index
       @users = User.includes(:roles).all
       authorize User
+
+      respond_to do |format|
+        format.html
+        format.json { render json: @users }
+      end
     end
 
     def show
       @user = User.find(params[:id])
       authorize @user
+
+      respond_to do |format|
+        format.html
+        format.json { render json: @user }
+      end
     end
 
     def edit
       @user = User.find(params[:id])
       authorize @user
+
+      respond_to do |format|
+        format.html
+        format.json { render json: @user }
+      end
     end
 
     def update
@@ -24,9 +41,15 @@ module Admin
       authorize @user
 
       if @user.update(user_params)
-        redirect_to admin_user_path(@user), notice: "User updated successfully."
+        respond_to do |format|
+          format.html { redirect_to admin_user_path(@user), notice: t("messages.user_updated") }
+          format.json { render json: @user }
+        end
       else
-        render :edit, status: :unprocessable_content
+        respond_to do |format|
+          format.html { render :edit, status: :unprocessable_content }
+          format.json { render json: { errors: @user.errors.full_messages }, status: :unprocessable_content }
+        end
       end
     end
 
@@ -34,7 +57,11 @@ module Admin
       @user = User.find(params[:id])
       authorize @user
       @user.destroy
-      redirect_to admin_users_path, notice: "User deleted successfully."
+
+      respond_to do |format|
+        format.html { redirect_to admin_users_path, notice: t("messages.user_deleted") }
+        format.json { head :no_content }
+      end
     end
 
     private
@@ -42,7 +69,7 @@ module Admin
     def verify_admin
       return if current_user.admin?
 
-      flash[:alert] = "You are not authorized to perform this action."
+      flash[:alert] = t("messages.not_authorized")
       redirect_to root_path
     end
 

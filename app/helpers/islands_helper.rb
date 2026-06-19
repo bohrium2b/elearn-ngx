@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 module IslandsHelper
   # Renders a React island as a native HTML5 Custom Element.
   #
@@ -19,6 +21,8 @@ module IslandsHelper
     # attribute is read back by the browser.
     serialized_props = props.to_json
 
-    content_tag(name.to_sym, "", "data-props": serialized_props)
+    # Build the tag manually to preserve JSON format in the attribute
+    # The browser will parse the JSON from the data-props attribute
+    "<#{name} data-props=\"#{serialized_props}\"></#{name}>".html_safe # rubocop:disable Rails/OutputSafety
   end
 end

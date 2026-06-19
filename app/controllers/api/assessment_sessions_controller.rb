@@ -6,7 +6,6 @@ module Api
 
     rescue_from Pundit::NotAuthorizedError, with: :user_not_authorized_api
 
-    # GET /api/assessment_sessions
     def index
       @sessions = policy_scope(AssessmentSession).recent
       @sessions = @sessions.for_exercise(Exercise.find(params[:exercise_id])) if params[:exercise_id]
@@ -16,7 +15,6 @@ module Api
       }
     end
 
-    # GET /api/assessment_sessions/:id
     def show
       @session = AssessmentSession.find(params[:id])
       authorize @session
@@ -24,17 +22,32 @@ module Api
       render json: { session: serialize_session_detail(@session) }
     end
 
-    # POST /api/assessment_sessions
     def create
       result = TelemetryProcessor.new(permitted_params, current_user).process
-      Rails.logger.info "Processed assessment session creation request for user #{current_user.id}, result: #{result}"
-      unless result[:success]
-        Rails.logger.error "Failed to create assessment session for user #{current_user.id}, with error: #{result[:errors]}"
-        render json: { errors: result[:errors] }, status: :unprocessable_content
-        return
-      end
+      log_create_result(result)
+      return render json: { errors: result[:errors] }, status: :unprocessable_content unless result[:success]
 
-      @session = AssessmentSession.new(
+      @session = build_assessment_session(result)
+      authorize @session
+
+      if save_and_process_session(@session, result)
+        render json: { session: serialize_session(@session) }, status: :created
+      else
+        render json: { errors: @session.errors.full_messages }, status: :unprocessable_content
+      end
+    end
+
+    private
+
+    def log_create_result(result)
+      Rails.logger.info "Processed assessment session creation request for user #{current_user.id}, result: #{result}"
+      return if result[:success]
+
+      Rails.logger.error "Failed to create assessment session for user #{current_user.id}, with error: #{result[:errors]}"
+    end
+
+    def build_assessment_session(result)
+      AssessmentSession.new(
         user: result[:user],
         exercise: result[:exercise],
         score_percentage: result[:score_percentage],
@@ -42,21 +55,33 @@ module Api
         completed_at: result[:completed_at],
         telemetry_data: result[:telemetry_data]
       )
+    end
 
-      authorize @session
-
-      if @session.save
-        render json: { session: serialize_session(@session) }, status: :created
+    def save_and_process_session(session, result)
+      if session.save
+        assign_topic_to_session(session)
+        process_telemetry(session, result)
+        true
       else
-        Rails.logger.error "Failed to create assessment session for user #{current_user.id}, with error: #{@session.errors.full_messages}"
-        render json: { errors: @session.errors.full_messages }, status: :unprocessable_content
+        Rails.logger.error "Failed to create assessment session for user #{current_user.id}, with error: #{session.errors.full_messages}"
+        false
       end
     end
 
-    private
+    def assign_topic_to_session(session)
+      return if params[:topic_id].blank?
+
+      topic = TaxonomyNode.find_by(param: params[:topic_id])
+      session.update(taxonomy_node: topic) if topic
+    end
+
+    def process_telemetry(session, result)
+      telemetry_processor = TelemetryProcessor.new(permitted_params, result[:user])
+      telemetry_processor.process_with_topics(session)
+    end
 
     def user_not_authorized_api
-      render json: { error: "You are not authorized to perform this action." }, status: :forbidden
+      render json: { error: t("messages.not_authorized") }, status: :forbidden
     end
 
     def permitted_params

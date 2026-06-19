@@ -3,13 +3,10 @@
 class AnalyticsController < ApplicationController
   before_action :authenticate_user!
 
-  # GET /analytics - redirect to dashboard
   def index
     redirect_to dashboard_analytics_path
   end
 
-  # GET /analytics/dashboard
-  # Student personal performance dashboard
   def dashboard
     @student_analytics = StudentAnalytics.new(current_user)
 
@@ -26,43 +23,19 @@ class AnalyticsController < ApplicationController
     end
   end
 
-  # GET /analytics/:id/review
-  # Detailed question review for a specific session
   def review
+    # rubocop:disable Rails/DynamicFindBy
     @session = AssessmentSession.find_by_uuid_or_id(params[:id])
-
-    unless @session
-      redirect_to dashboard_analytics_path, alert: "Session not found."
-      return
-    end
-
-    # Permission check: only session owner, instructors, or admins can view
-    unless @session.user_id == current_user.id || current_user.instructor? || current_user.admin?
-      redirect_to dashboard_analytics_path, alert: "You are not authorized to view this session."
-      return
-    end
+    # rubocop:enable Rails/DynamicFindBy
+    return redirect_to_review_alert unless @session
+    return redirect_to_unauthorized_review unless can_review?(@session)
 
     respond_to do |format|
       format.html
-      format.json do
-        render json: {
-          session: {
-            id: @session.id,
-            uuid: @session.uuid,
-            exercise_title: @session.exercise.title,
-            score_percentage: @session.score_percentage.to_f,
-            duration_seconds: @session.duration_seconds,
-            completed_at: @session.completed_at,
-            question_responses: enrich_question_responses(@session.question_responses),
-            tag_registry: @session.tag_registry
-          }
-        }
-      end
+      format.json { render json: review_json }
     end
   end
 
-  # GET /analytics/weak_points
-  # System deficit tracker
   def weak_points
     window = params[:window].present? ? params[:window].to_i.days : 30.days
     @student_analytics = StudentAnalytics.new(current_user)
@@ -78,8 +51,6 @@ class AnalyticsController < ApplicationController
     end
   end
 
-  # GET /analytics/recommendations
-  # Smart recommendation engine - generates custom exercises
   def recommendations
     @student_analytics = StudentAnalytics.new(current_user)
 
@@ -93,94 +64,103 @@ class AnalyticsController < ApplicationController
     end
   end
 
-  # GET /analytics/cohort
-  # High-level cohort monitor (instructor/admin only)
   def cohort
-    unless current_user.instructor? || current_user.admin?
-      redirect_to dashboard_analytics_path, alert: "You are not authorized to view cohort data."
-      return
+    unless can_view_instructor_data?
+      return redirect_to dashboard_analytics_path,
+                         alert: t("messages.not_authorized_cohort")
     end
 
     respond_to do |format|
       format.html
-      format.json do
-        render json: {
-          cohort: AnalyticsAggregator.cohort_metrics
-        }
-      end
+      format.json { render json: { cohort: AnalyticsAggregator.cohort_metrics } }
     end
   end
 
-  # GET /analytics/tag_matrix
-  # System-wide tag breakdown matrix (instructor/admin only)
   def tag_matrix
-    unless current_user.instructor? || current_user.admin?
-      redirect_to dashboard_analytics_path, alert: "You are not authorized to view tag matrix."
-      return
+    unless can_view_instructor_data?
+      return redirect_to dashboard_analytics_path,
+                         alert: t("messages.not_authorized_tag_matrix")
     end
 
     respond_to do |format|
       format.html
-      format.json do
-        render json: {
-          tag_matrix: AnalyticsAggregator.tag_performance_matrix
-        }
-      end
+      format.json { render json: { tag_matrix: AnalyticsAggregator.tag_performance_matrix } }
     end
   end
 
-  # GET /analytics/item_discrimination
-  # Item discrimination metric tracker (instructor/admin only)
   def item_discrimination
-    unless current_user.instructor? || current_user.admin?
-      redirect_to dashboard_analytics_path, alert: "You are not authorized to view item discrimination data."
-      return
+    unless can_view_instructor_data?
+      return redirect_to dashboard_analytics_path,
+                         alert: t("messages.not_authorized_item_discrimination")
     end
 
     respond_to do |format|
       format.html
-      format.json do
-        render json: {
-          items: AnalyticsAggregator.item_discrimination_metrics
-        }
-      end
+      format.json { render json: { items: AnalyticsAggregator.item_discrimination_metrics } }
     end
   end
 
-  # GET /analytics/performance_logs
   def performance_logs
-    unless current_user.instructor? || current_user.admin?
-      redirect_to dashboard_analytics_path, alert: "You are not authorized to view performance logs."
-      return
+    unless can_view_instructor_data?
+      return redirect_to dashboard_analytics_path,
+                         alert: t("messages.not_authorized_performance_logs")
     end
 
     respond_to do |format|
       format.html
       format.json do
         sessions = AssessmentSession.recent.limit(100)
-        render json: {
-          sessions: sessions.map { |s| serialize_performance_log(s) }
-        }
+        render json: { sessions: sessions.map { |s| serialize_performance_log(s) } }
       end
     end
   end
 
   private
 
+  def can_review?(session)
+    session.user_id == current_user.id || current_user.instructor? || current_user.admin?
+  end
+
+  def can_view_instructor_data?
+    current_user.instructor? || current_user.admin?
+  end
+
+  def redirect_to_review_alert
+    redirect_to dashboard_analytics_path, alert: t("messages.session_not_found")
+  end
+
+  def redirect_to_unauthorized_review
+    redirect_to dashboard_analytics_path, alert: t("messages.not_authorized_view_session")
+  end
+
+  def review_json
+    {
+      session: {
+        id: @session.id,
+        uuid: @session.uuid,
+        exercise_title: @session.exercise.title,
+        score_percentage: @session.score_percentage.to_f,
+        duration_seconds: @session.duration_seconds,
+        completed_at: @session.completed_at,
+        question_responses: enrich_question_responses(@session.question_responses),
+        tag_registry: @session.tag_registry
+      }
+    }
+  end
+
   def enrich_question_responses(question_responses)
     question_responses.map do |qr|
       question = Question.find_by(uuid: qr["question_uuid"])
-      if question
-        config = question.config_data || {}
-        qr.merge(
-          "question_text" => config["question"],
-          "choices" => config["choices"],
-          "correct_answer" => (config["choices"] || []).find { |c| c["correct"] }&.dig("content"),
-          "rationale" => (config["choices"] || []).find { |c| c["correct"] }&.dig("rationale")
-        )
-      else
-        qr
-      end
+      next qr unless question
+
+      config = question.config_data || {}
+      correct_choice = (config["choices"] || []).find { |c| c["correct"] }
+      qr.merge(
+        "question_text" => config["question"],
+        "choices" => config["choices"],
+        "correct_answer" => correct_choice&.dig("content"),
+        "rationale" => correct_choice&.dig("rationale")
+      )
     end
   end
 

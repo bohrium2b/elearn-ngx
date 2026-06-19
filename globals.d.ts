@@ -6,12 +6,25 @@ declare module "*.svg?react" {
   export default SVGComponent;
 }
 
+// MathJax bundle module declaration
+declare module "@mathjax/src/bundle/tex-svg.js" {
+  const MathJax: any;
+  export default MathJax;
+}
+
+// jQuery module declaration
+declare module "jquery" {
+  const jQuery: any;
+  export default jQuery;
+  export = jQuery;
+}
+
 // Vite import.meta.glob type declarations
 interface ImportMeta {
   readonly env: ImportMetaEnv;
   glob<Module = unknown>(
     pattern: string,
-    options?: { eager?: boolean }
+    options?: { eager?: boolean },
   ): Record<string, Module | (() => Promise<Module>)>;
 }
 

@@ -1,10 +1,11 @@
+# frozen_string_literal: true
+
 class TagController < ApplicationController
   before_action :authenticate_user!, except: %i[index show]
   before_action :set_tag, only: %i[show edit update destroy]
   after_action :verify_authorized, except: :index
 
   def index
-    # Return full tag tree with questions
     root_tags = Tag.where(parent_id: nil).includes(:children, :questions)
     render json: root_tags.map { |tag| build_tag_tree(tag) }
   end
@@ -29,7 +30,7 @@ class TagController < ApplicationController
 
     if @tag.save
       respond_to do |format|
-        format.html { redirect_to tag_path(@tag), notice: "Tag was created." }
+        format.html { redirect_to tag_path(@tag), notice: t("messages.tag_created") }
         format.json { render json: { status: "success", tag: tag_payload(@tag) }, status: :created }
       end
     else
@@ -80,18 +81,12 @@ class TagController < ApplicationController
 
   def find_tag_by_param(param)
     key = param.to_s
-
-    # If param contains our `uuid-x:slug` format, the uuid is the first 36 chars
-    if key.length >= 36
-      uuid = key[0..35]
-      # Use the uuid to find the tag
-      tag = Tag.find_by(uuid: uuid)
-    else
-      # Use the param directly to find the tag
-      tag = Tag.find_by(slug: key)
-      tag ||= Tag.find_by(id: key)
-    end
-
+    tag = if key.length >= 36
+            uuid = key[0..35]
+            Tag.find_by(uuid: uuid)
+          else
+            Tag.find_by(slug: key) || Tag.find_by(id: key)
+          end
     raise ActiveRecord::RecordNotFound, "Tag not found" unless tag
 
     tag
@@ -99,10 +94,12 @@ class TagController < ApplicationController
 
   def tag_params(for_create:, current_tag: nil)
     attributes = params.require(:tag).permit(:name, :color, :parent_id, :slug).to_h.symbolize_keys
-    # Normalize slug if provided (ensure it starts with 'tag-')
+    normalize_tag_attributes(attributes, for_create: for_create, current_tag: current_tag)
+  end
+
+  def normalize_tag_attributes(attributes, for_create:, current_tag: nil)
     if attributes[:slug].present?
-      raw = attributes[:slug].to_s.strip
-      raw = raw.sub(/^tag-/, "")
+      raw = attributes[:slug].to_s.strip.sub(/^tag-/, "")
       attributes[:slug] = "tag-#{raw.parameterize}"
     end
     attributes[:color] = attributes[:color].presence

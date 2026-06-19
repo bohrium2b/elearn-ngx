@@ -29,3 +29,23 @@
 
 en:
   hello: "Hello world"
+  messages:
+    not_authorized: "You are not authorized to perform this action."
+    session_not_found: "Session not found."
+    not_authorized_view_session: "You are not authorized to view this session."
+    not_authorized_cohort: "You are not authorized to view cohort data."
+    not_authorized_tag_matrix: "You are not authorized to view tag matrix."
+    not_authorized_item_discrimination: "You are not authorized to view item discrimination data."
+    not_authorized_performance_logs: "You are not authorized to view performance logs."
+    question_created: "Question was successfully created."
+    question_updated: "Question was successfully updated."
+    question_deleted: "Question was successfully deleted."
+    tag_created: "Tag was created."
+    exercise_destroyed: "Exercise was successfully destroyed."
+    practice_created: "Practice exercise created! Let's begin."
+    no_practice_questions: "No practice questions available. Keep practicing to unlock more!"
+    exercise_not_found: "Exercise not found."
+    workspace_updated: "Workspace updated successfully."
+    user_updated: "User updated successfully."
+    user_deleted: "User deleted successfully."
+    only_allows_letters_numbers_underscores: "only allows letters, numbers, and underscores"

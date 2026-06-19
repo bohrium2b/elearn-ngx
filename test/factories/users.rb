@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 FactoryBot.define do
   factory :user do
     email { Faker::Internet.unique.email }
@@ -6,19 +8,31 @@ FactoryBot.define do
     password_confirmation { "password123" }
 
     trait :student do
-      after(:create) { |user| user.add_role(:student) }
+      after(:create) do |user|
+        user.roles.clear
+        user.add_role(:student)
+      end
     end
 
     trait :content_author do
-      after(:create) { |user| user.add_role(:content_author) }
+      after(:create) do |user|
+        user.roles.clear
+        user.add_role(:content_author)
+      end
     end
 
     trait :instructor do
-      after(:create) { |user| user.add_role(:instructor) }
+      after(:create) do |user|
+        user.roles.clear
+        user.add_role(:instructor)
+      end
     end
 
     trait :admin do
-      after(:create) { |user| user.add_role(:admin) }
+      after(:create) do |user|
+        user.roles.clear
+        user.add_role(:admin)
+      end
     end
   end
 end

@@ -13,6 +13,10 @@ class AssessmentSessionPolicy < ApplicationPolicy
     authenticated?
   end
 
+  def update?
+    own_record? || instructor? || admin?
+  end
+
   class Scope < Scope
     def resolve
       if user&.instructor? || user&.admin?
