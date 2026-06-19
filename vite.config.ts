@@ -10,16 +10,6 @@ export default defineConfig({
   plugins: [
     // Integrates with the vite_rails gem – reads config/vite.json
     RubyPlugin(),
-
-    // Enables fast JSX refresh and Babel-based transforms for React
-    // Allows importing SVGs as React components: import { ReactComponent as Icon } from '@/images/icon.svg'
-    svgr({
-      // Pass options directly to the underlying SVGR instance
-      svgrOptions: {
-        plugins: ["@svgr/plugin-jsx"],
-      },
-    }),
-    react(),
     // Copy MathJax source bundle into the built/public assets so worker
     // files (speech-worker.js, etc.) are served with correct MIME types.
     viteStaticCopy({
@@ -30,6 +20,15 @@ export default defineConfig({
         },
       ],
     }),
+    // Enables fast JSX refresh and Babel-based transforms for React
+    // Allows importing SVGs as React components: import { ReactComponent as Icon } from '@/images/icon.svg'
+    svgr({
+      // Pass options directly to the underlying SVGR instance
+      svgrOptions: {
+        plugins: ["@svgr/plugin-jsx"],
+      },
+    }),
+    react(),
   ],
 
   resolve: {
@@ -72,7 +71,10 @@ export default defineConfig({
         manualChunks(id) {
           // ── React Core ─────────────────────────────────────────────────────
           // React core is used by all islands but should be a single chunk
-          if (id.includes("node_modules/react/") || id.includes("node_modules/react-dom/")) {
+          if (
+            id.includes("node_modules/react/") ||
+            id.includes("node_modules/react-dom/")
+          ) {
             return "vendor-react";
           }
 
@@ -113,7 +115,9 @@ export default defineConfig({
           if (id.includes("node_modules/@khanacademy/wonder-blocks-icon/")) {
             return "vendor-wb-icon";
           }
-          if (id.includes("node_modules/@khanacademy/wonder-blocks-icon-button/")) {
+          if (
+            id.includes("node_modules/@khanacademy/wonder-blocks-icon-button/")
+          ) {
             return "vendor-wb-icon-button";
           }
           if (id.includes("node_modules/@khanacademy/wonder-blocks-modal/")) {
@@ -122,13 +126,17 @@ export default defineConfig({
           if (id.includes("node_modules/@khanacademy/wonder-blocks-form/")) {
             return "vendor-wb-form";
           }
-          if (id.includes("node_modules/@khanacademy/wonder-blocks-dropdown/")) {
+          if (
+            id.includes("node_modules/@khanacademy/wonder-blocks-dropdown/")
+          ) {
             return "vendor-wb-dropdown";
           }
           if (id.includes("node_modules/@khanacademy/wonder-blocks-tooltip/")) {
             return "vendor-wb-tooltip";
           }
-          if (id.includes("node_modules/@khanacademy/wonder-blocks-typography/")) {
+          if (
+            id.includes("node_modules/@khanacademy/wonder-blocks-typography/")
+          ) {
             return "vendor-wb-typography";
           }
           if (id.includes("node_modules/@khanacademy/wonder-blocks-layout/")) {
@@ -152,10 +160,16 @@ export default defineConfig({
           if (id.includes("node_modules/@khanacademy/wonder-blocks-popover/")) {
             return "vendor-wb-popover";
           }
-          if (id.includes("node_modules/@khanacademy/wonder-blocks-announcer/")) {
+          if (
+            id.includes("node_modules/@khanacademy/wonder-blocks-announcer/")
+          ) {
             return "vendor-wb-announcer";
           }
-          if (id.includes("node_modules/@khanacademy/wonder-blocks-progress-spinner/")) {
+          if (
+            id.includes(
+              "node_modules/@khanacademy/wonder-blocks-progress-spinner/",
+            )
+          ) {
             return "vendor-wb-progress";
           }
           if (id.includes("node_modules/@khanacademy/wonder-blocks-timing/")) {
@@ -164,7 +178,11 @@ export default defineConfig({
           if (id.includes("node_modules/@khanacademy/wonder-blocks-tokens/")) {
             return "vendor-wb-tokens";
           }
-          if (id.includes("node_modules/@khanacademy/wonder-blocks-labeled-field/")) {
+          if (
+            id.includes(
+              "node_modules/@khanacademy/wonder-blocks-labeled-field/",
+            )
+          ) {
             return "vendor-wb-labeled-field";
           }
           if (id.includes("node_modules/@khanacademy/wonder-blocks-data/")) {
@@ -191,12 +209,18 @@ export default defineConfig({
           }
 
           // ── KaTeX (Math rendering alternative) ─────────────────────────────
-          if (id.includes("node_modules/katex/") || id.includes("node_modules/react-katex/")) {
+          if (
+            id.includes("node_modules/katex/") ||
+            id.includes("node_modules/react-katex/")
+          ) {
             return "vendor-katex";
           }
 
           // ── Markdown Rendering (Split by plugin) ────────────────────────────
-          if (id.includes("node_modules/rehype-katex/") || id.includes("node_modules/remark-math/")) {
+          if (
+            id.includes("node_modules/rehype-katex/") ||
+            id.includes("node_modules/remark-math/")
+          ) {
             return "vendor-markdown-math";
           }
           if (id.includes("node_modules/rehype-highlight/")) {
@@ -211,7 +235,10 @@ export default defineConfig({
           if (id.includes("node_modules/rehype-mathjax/")) {
             return "vendor-markdown-mathjax";
           }
-          if (id.includes("node_modules/remark-twemoji/") || id.includes("node_modules/twemoji/")) {
+          if (
+            id.includes("node_modules/remark-twemoji/") ||
+            id.includes("node_modules/twemoji/")
+          ) {
             return "vendor-markdown-emoji";
           }
           if (id.includes("node_modules/remark-gemoji/")) {
@@ -253,7 +280,10 @@ export default defineConfig({
           if (id.includes("node_modules/react-transition-group/")) {
             return "vendor-react-transition";
           }
-          if (id.includes("node_modules/react-popper/") || id.includes("node_modules/@popperjs/")) {
+          if (
+            id.includes("node_modules/react-popper/") ||
+            id.includes("node_modules/@popperjs/")
+          ) {
             return "vendor-popper";
           }
           if (id.includes("node_modules/prop-types/")) {
