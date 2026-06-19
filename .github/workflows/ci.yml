@@ -14,7 +14,7 @@ env:
   RUBY_VERSION: "3.3"
   NODE_VERSION: "20"
   RAILS_ENV: test
-  DATABASE_HOST: localhost
+  DATABASE_HOST: postgres
   DATABASE_PORT: 5432
   DATABASE_USER: postgres
   DATABASE_PASSWORD: postgres
@@ -45,7 +45,7 @@ jobs:
         uses: ruby/setup-ruby@v1
         with:
           ruby-version: ${{ env.RUBY_VERSION }}
-          bundler-cache: true   # runs `bundle install` and caches gems
+          bundler-cache: true # runs `bundle install` and caches gems
 
       - name: RuboCop
         run: bundle exec rubocop --parallel
@@ -80,3 +80,6 @@ jobs:
 
       - name: ESLint
         run: yarn lint
+
+      - name: TypeScript type-check
+        run: yarn tsc --noEmit
