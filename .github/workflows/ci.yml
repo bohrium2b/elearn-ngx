@@ -59,9 +59,18 @@ jobs:
         run: |
           bundle exec rails db:create
           bundle exec rails db:migrate
-
+      - name: Install yarn dependencies
+        run: yarn install --frozen-lockfile
+      - name: Wait for PostgreSQL
+        run: |
+          until pg_isready -h localhost -p 5432; do
+            echo "Waiting for PostgreSQL to be ready..."
+            sleep 1
+          done
       - name: Run Rails tests
-        run: bundle exec rails test
+        run: |
+          bundle exec rails db:test:prepare
+          bundle exec rails test
 
   # ── Frontend linting & TypeScript type-check ─────────────────────────────
   frontend:
