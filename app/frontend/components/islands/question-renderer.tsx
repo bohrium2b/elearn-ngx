@@ -1,6 +1,6 @@
 import { QuestionRendererWithUI } from "../perseus/QuestionRenderer";
 import type { MultiChoiceQuestion } from "../perseus/types";
-import React, { useEffect, useRef, useState } from "react";
+import React from "react";
 
 type QuestionRendererIsland = {
   question: MultiChoiceQuestion & { type: "multi-choice" };

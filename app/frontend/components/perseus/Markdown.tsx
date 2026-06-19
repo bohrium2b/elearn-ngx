@@ -25,11 +25,11 @@ const Markdown: React.FC<MarkdownProps> = memo(({ children, fontFamily }) => {
 
     function escapeHtml(s: string) {
       return s
-        .replace(/&/g, "&amp;")
-        .replace(/</g, "&lt;")
-        .replace(/>/g, "&gt;")
-        .replace(/\"/g, "&quot;")
-        .replace(/'/g, "&#39;");
+        .replace(/&/g, "&")
+        .replace(/</g, "<")
+        .replace(/>/g, ">")
+        .replace(/"/g, "")
+        .replace(/'/g, "'");
     }
 
     function processMath(input: string) {
@@ -48,7 +48,7 @@ const Markdown: React.FC<MarkdownProps> = memo(({ children, fontFamily }) => {
       }
       out += input.slice(last);
 
-      const inlineRe = /\$([^\$\n]+?)\$/g;
+      const inlineRe = /\$([^$\n]+?)\$/g;
       let finalOut = "";
       last = 0;
       while ((m = inlineRe.exec(out)) !== null) {
@@ -99,7 +99,7 @@ const Markdown: React.FC<MarkdownProps> = memo(({ children, fontFamily }) => {
                 </div>
               );
             },
-          } as any
+          } as Record<string, React.FC<{ children?: React.ReactNode }>>
         }
       >
         {processed === null

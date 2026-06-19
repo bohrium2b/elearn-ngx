@@ -32,6 +32,7 @@ import "bootstrap/dist/css/bootstrap.min.css";
 import $ from "jquery";
 if (!$.event) {
   // Ensure the event object exists
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   $.event = {} as any;
 }
 $.event.props = $.event.props || [];

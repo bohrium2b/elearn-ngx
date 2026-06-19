@@ -17,30 +17,43 @@ export const MathJaxRenderer: React.FC = () => null;
 // `/mathjax/a11y/sre.js` (copied to `public/mathjax`). If neither is
 // available, it returns a no-op object whose `texToSpeech` simply
 // returns the input string.
+// Type for SRE module
+interface SreModule {
+  setupEngine: (options: { locale: string; modality: string }) => Promise<void>;
+  engineReady: () => Promise<void>;
+  toSpeech: (m: string) => string;
+  texToSpeech: (m: string) => string;
+}
+
+// Type for global SRE
+interface GlobalSRE {
+  setup: (locale: string) => Promise<void>;
+  texToSpeech: (m: string) => string;
+}
+
 export const SpeechRuleEngine = {
   async setup(locale = "en") {
     // Try the installed npm package first.
     try {
       // The same import path used elsewhere in this repo.
-      // eslint-disable-next-line @typescript-eslint/no-var-requires
       const sreModule = await import("speech-rule-engine/js/common/system.js");
-      if (sreModule && typeof sreModule.setupEngine === "function") {
-        await sreModule.setupEngine({ locale, modality: "speech" });
-        if (typeof sreModule.engineReady === "function") {
-          await sreModule.engineReady();
+      const sre = sreModule as unknown as SreModule;
+      if (sre && typeof sre.setupEngine === "function") {
+        await sre.setupEngine({ locale, modality: "speech" });
+        if (typeof sre.engineReady === "function") {
+          await sre.engineReady();
         }
         return {
-          texToSpeech: (m: any) => {
-            const anyMod: any = sreModule;
-            if (typeof anyMod.toSpeech === "function")
-              return anyMod.toSpeech(String(m));
-            if (typeof anyMod.texToSpeech === "function")
-              return anyMod.texToSpeech(String(m));
+          texToSpeech: (m: string) => {
+            if (typeof sre.toSpeech === "function")
+              return sre.toSpeech(String(m));
+            if (typeof sre.texToSpeech === "function")
+              return sre.texToSpeech(String(m));
             return String(m);
           },
         };
       }
-    } catch (e) {
+    } catch {
       // continue to fallback
     }
 
@@ -49,23 +62,27 @@ export const SpeechRuleEngine = {
       const base = "/mathjax";
       const mod = await import(`${base}/a11y/sre.js`);
       // The bundled script may attach itself to globalThis in various ways.
-      const globalSRE =
-        (globalThis as any).SRE || (globalThis as any).sre || mod || {};
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const globalObj = globalThis as any;
+      const globalSRE = (globalObj.SRE ||
+        globalObj.sre ||
+        mod ||
+        {}) as GlobalSRE;
       if (globalSRE && typeof globalSRE.setup === "function") {
         await globalSRE.setup(locale);
         return {
-          texToSpeech: (m: any) =>
+          texToSpeech: (m: string) =>
             (typeof globalSRE.texToSpeech === "function" &&
               globalSRE.texToSpeech(String(m))) ||
             String(m),
         };
       }
-    } catch (e) {
+    } catch {
       // ignore
     }
 
     // Final fallback: no-op
-    return { texToSpeech: (m: any) => String(m) };
+    return { texToSpeech: (m: string) => String(m) };
   },
 };
 

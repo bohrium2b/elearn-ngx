@@ -12,7 +12,6 @@ import theme from "./theme";
 import remarkMath from "remark-math";
 import remarkGfm from "remark-gfm";
 import rehypeKatex from "rehype-katex";
-import Markdown from "react-markdown";
 import "katex/dist/katex.min.css";
 
 export type MultiChoiceEditorProps = {

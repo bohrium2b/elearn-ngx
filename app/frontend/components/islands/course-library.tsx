@@ -13,6 +13,7 @@ import { Topic } from '../taxonomy/types';
 export const tagName = 'course-library';
 
 // ── Props interface ───────────────────────────────────────────────────────────
+// eslint-disable-next-line @typescript-eslint/no-empty-object-type
 interface CourseLibraryProps {
   // No props needed - component fetches its own data
 }

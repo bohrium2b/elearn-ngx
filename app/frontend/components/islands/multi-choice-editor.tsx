@@ -1,7 +1,7 @@
 import MultiChoiceEditorMemo, { MultiChoiceEditorRef } from "../perseus/MultiChoiceEditor";
 import { MultiChoiceChoice } from "../perseus/MultiChoice";
 import { Typography } from "@mui/material";
-import React, { useEffect, useRef, useState } from "react";
+import React, { useRef, useState } from "react";
 import { Button } from "@mui/material";
 import { Question } from "../perseus/types";
 import Input from "@mui/material/Input";

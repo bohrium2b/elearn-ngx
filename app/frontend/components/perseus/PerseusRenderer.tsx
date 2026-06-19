@@ -40,8 +40,8 @@ export type PerseusRendererProps = {
 export type PerseusRendererRef = {
   getScore: () => number | null;
   getHintsIndex: () => number;
-  getSerializedState: () => any;
-  setSerializedState: (state: any) => void;
+  getSerializedState: () => Record<string, unknown> | null;
+  setSerializedState: (state: Record<string, unknown> | null) => void;
 };
 
 export const dependencies: PerseusDependencies = {
@@ -135,7 +135,7 @@ export const PerseusRenderer = forwardRef<
   const { question, item, hints, questionId } = props;
   const rendererRef = useRef<typeof ServerItemRenderer | null>(null);
   // const [hintsIndex, setHintsIndex] = useState(-1);
-  const [_] = useState(0);
+  const [hintsIndex, setHintsIndex] = useState(-1);
   const [, setScore] = useState<number | null>(null);
   const theme = useTheme();
   const [hintsControlled] = useState(
@@ -144,16 +144,12 @@ export const PerseusRenderer = forwardRef<
     props.showHintsUI === false,
   );
 
-  if (
-    hintsControlled &&
+  const effectiveHintsIndex = hintsControlled &&
     props.numberOfHintsToShow !== null &&
     props.numberOfHintsToShow !== undefined &&
     props.showHintsUI === false
-  ) {
-    var hintsIndex = props.numberOfHintsToShow - 1;
-  } else {
-    var [hintsIndex, setHintsIndex] = useState(-1);
-  }
+    ? props.numberOfHintsToShow - 1
+    : hintsIndex;
 
   const getScore = useCallback(() => {
     const renderer = rendererRef.current;
@@ -176,7 +172,7 @@ export const PerseusRenderer = forwardRef<
     }
     setScore(rawScore.earned / rawScore.total);
     return rawScore.earned / rawScore.total;
-  }, []);
+  }, [item.question]);
 
   const getSerializedState = useCallback(() => {
     const renderer = rendererRef.current;
@@ -187,7 +183,7 @@ export const PerseusRenderer = forwardRef<
     return renderer.getSerializedState();
   }, []);
 
-  const setSerializedState = useCallback((state: any) => {
+  const setSerializedState = useCallback((state: Record<string, unknown> | null) => {
     const renderer = rendererRef.current;
     if (!renderer || !state) {
       return;
@@ -195,9 +191,10 @@ export const PerseusRenderer = forwardRef<
     // Restore widget state by re-interacting with each widget
     // The ServerItemRenderer's getSerializedState returns {question, hints}
     // We restore by calling handleInteractWithWidget for each widget's state
-    if (state.question) {
-      Object.keys(state.question).forEach((widgetId) => {
-        if (state.question[widgetId] != null) {
+    const questionState = state['question'] as Record<string, unknown> | undefined;
+    if (questionState) {
+      Object.keys(questionState).forEach((widgetId) => {
+        if (questionState[widgetId] != null) {
           // @ts-expect-error - TS2339 - Property 'handleInteractWithWidget' does not exist on type 'ServerItemRenderer'.
           renderer.handleInteractWithWidget(widgetId);
         }
@@ -209,11 +206,11 @@ export const PerseusRenderer = forwardRef<
     ref,
     () => ({
       getScore: () => getScore(),
-      getHintsIndex: () => hintsIndex,
+      getHintsIndex: () => effectiveHintsIndex,
       getSerializedState: getSerializedState,
       setSerializedState: setSerializedState,
     }),
-    [getScore, hintsIndex, getSerializedState, setSerializedState],
+    [getScore, effectiveHintsIndex, getSerializedState, setSerializedState],
   );
   /*const getScore = () => {
         const renderer = rendererRef.current;
@@ -301,7 +298,7 @@ export const PerseusRenderer = forwardRef<
                 status: "success",
                 data: { video: null },
               }),
-              generateUrl: (_args: any) => {
+              generateUrl: () => {
                 return "mockGenerateUrl";
               },
             }}

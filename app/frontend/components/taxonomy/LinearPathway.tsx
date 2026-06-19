@@ -134,23 +134,23 @@ const TopicNode: React.FC<TopicNodeProps> = ({
               "&:hover":
                 status === "active"
                   ? {
-                      transform: "scale(1.1)",
-                      boxShadow: "0 8px 30px rgba(25, 118, 210, 0.6)",
-                    }
+                    transform: "scale(1.1)",
+                    boxShadow: "0 8px 30px rgba(25, 118, 210, 0.6)",
+                  }
                   : status === "completed"
                     ? { transform: "scale(1.05)" }
                     : {},
               ...(status === "active"
                 ? {
-                    animation: "topicPulse 2s infinite",
-                    "@keyframes topicPulse": {
-                      "0%": { boxShadow: "0 0 0 0 rgba(25, 118, 210, 0.5)" },
-                      "70%": {
-                        boxShadow: "0 0 0 15px rgba(25, 118, 210, 0)",
-                      },
-                      "100%": { boxShadow: "0 0 0 0 rgba(25, 118, 210, 0)" },
+                  animation: "topicPulse 2s infinite",
+                  "@keyframes topicPulse": {
+                    "0%": { boxShadow: "0 0 0 0 rgba(25, 118, 210, 0.5)" },
+                    "70%": {
+                      boxShadow: "0 0 0 15px rgba(25, 118, 210, 0)",
                     },
-                  }
+                    "100%": { boxShadow: "0 0 0 0 rgba(25, 118, 210, 0)" },
+                  },
+                }
                 : {}),
             }}
             onClick={status === "active" ? onStart : undefined}
@@ -370,10 +370,6 @@ export const LinearPathway: React.FC<LinearPathwayProps> = ({ courseId }) => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    loadCourse();
-  }, [courseId]);
-
   const loadCourse = useCallback(async () => {
     setLoading(true);
     setError(null);
@@ -391,6 +387,10 @@ export const LinearPathway: React.FC<LinearPathwayProps> = ({ courseId }) => {
       setLoading(false);
     }
   }, [courseId]);
+
+  useEffect(() => {
+    loadCourse();
+  }, [loadCourse]);
 
   const handleStartTopic = async (topic: Topic) => {
     try {

@@ -5,7 +5,7 @@
  * learning pathways, and user progress tracking.
  */
 
-export type TaxonomyLevel = 'course' | 'part' | 'unit' | 'topic';
+export type TaxonomyLevel = "course" | "part" | "unit" | "topic";
 
 export interface TaxonomyNode {
   id: number;
@@ -18,7 +18,7 @@ export interface TaxonomyNode {
   course_id: number | null;
   position: number;
   description: string | null;
-  metadata: Record<string, any>;
+  metadata: Record<string, unknown>;
   children_count: number;
   questions_count: number;
   created_at: string;
@@ -52,24 +52,24 @@ export interface ContentAssignment {
 }
 
 export interface Course extends TaxonomyNode {
-  level: 'course';
+  level: "course";
   parts: Part[];
   parts_count?: number;
   topics_count?: number;
 }
 
 export interface Part extends TaxonomyNode {
-  level: 'part';
+  level: "part";
   units: Unit[];
 }
 
 export interface Unit extends TaxonomyNode {
-  level: 'unit';
+  level: "unit";
   topics: Topic[];
 }
 
 export interface Topic extends TaxonomyNode {
-  level: 'topic';
+  level: "topic";
   questions: Question[];
   tags: Tag[];
 }
@@ -83,7 +83,12 @@ export interface Exercise {
   path_identifier: string;
   spec: {
     description?: string;
-    selection_rules?: any[];
+    selection_rules?: Array<{
+      type: string;
+      tag_uuid?: string;
+      count?: number;
+      question_uuid?: string;
+    }>;
   };
 }
 

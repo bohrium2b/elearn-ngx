@@ -45,16 +45,16 @@ export const QuestionRendererWithUI: React.FC<{ question: Question }> = ({
   const [hintsToShow, setHintsToShow] = useState(0);
   const [score, setScore] = useState<number | null>(null);
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
-  const questionRef = useRef<any>(null);
+  const questionRef = useRef<{ getScore: () => number | null }>(null);
   const [reviewMode, setReviewMode] = useState(false);
   // Generate random ID
-  const [randomId, _] = useState(Math.random().toString(36).substring(2, 15));
+  const [randomId] = useState(Math.random().toString(36).substring(2, 15));
 
   useEffect(() => {
     if (score !== null) {
       setAnchorEl(document.getElementById("check-score-button-" + randomId));
     }
-  }, [score]);
+  }, [score, randomId]);
 
   const handleClose = () => {
     setAnchorEl(null);
@@ -62,10 +62,10 @@ export const QuestionRendererWithUI: React.FC<{ question: Question }> = ({
 
   const checkScore = () => {
     // Access the getScore method from the QuestionRenderer
-    const currentScore = questionRef.current?.getScore();
+    const currentScore = questionRef.current?.getScore() ?? null;
     console.log(currentScore);
     setScore(currentScore);
-    if (currentScore >= 0) {
+    if (currentScore !== null && currentScore >= 0) {
       setReviewMode(true);
     }
     if (currentScore === 0) {

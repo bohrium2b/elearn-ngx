@@ -6,15 +6,14 @@
  */
 
 import React, { useState, useEffect } from 'react';
-import { 
-  Box, 
-  Typography, 
-  List, 
-  ListItem, 
-  ListItemButton, 
+import {
+  Box,
+  Typography,
+  List,
+  ListItem,
+  ListItemButton,
   ListItemText,
   Collapse,
-  IconButton,
   Chip,
   LinearProgress
 } from '@mui/material';

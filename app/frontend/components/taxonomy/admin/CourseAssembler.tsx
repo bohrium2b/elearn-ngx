@@ -18,7 +18,7 @@ import {
 } from '@mui/material';
 import { Add } from '@mui/icons-material';
 import { Course, TaxonomyNode, Part, Unit, Topic } from '../types';
-import { adminTaxonomyApi, taxonomyApi } from '../api';
+import { adminTaxonomyApi } from '../api';
 import { InventoryPanel } from './InventoryPanel';
 import { PathwayCanvas } from './PathwayCanvas';
 import { PreviewPanel } from './PreviewPanel';
@@ -34,11 +34,7 @@ export const CourseAssembler: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const { success } = useToast();
 
-  useEffect(() => {
-    loadCourses();
-  }, []);
-
-  const loadCourses = async () => {
+  const loadCourses = useCallback(async () => {
     try {
       const data = await adminTaxonomyApi.getFullTree();
       setCourses(data);
@@ -50,7 +46,11 @@ export const CourseAssembler: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [selectedCourse]);
+
+  useEffect(() => {
+    loadCourses();
+  }, [loadCourses]);
 
   // Optimistic update functions
   const addPartToCourse = useCallback((courseId: number, newPart: Part) => {

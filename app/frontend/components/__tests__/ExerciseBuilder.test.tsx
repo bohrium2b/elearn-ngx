@@ -5,10 +5,10 @@ import React from 'react';
 
 // Mock Perseus modules BEFORE importing the component
 vi.mock('../perseus/MultiChoice', () => ({
-  MultiChoice: ({ question, choices }: any) => {
+  MultiChoice: ({ question, choices }: { question: string; choices?: Array<{ content: string }> }) => {
     return React.createElement('div', { 'data-testid': 'mock-question' },
       React.createElement('p', null, question),
-      choices?.map((c: any, i: any) => React.createElement('span', { key: i }, c.content))
+      choices?.map((c, i) => React.createElement('span', { key: i }, c.content))
     );
   },
 }));
@@ -28,11 +28,11 @@ vi.mock('@khanacademy/perseus-core', () => ({
 }));
 
 vi.mock('../perseus/Markdown', () => ({
-  default: ({ children }: any) => React.createElement('span', null, children),
+  default: ({ children }: { children: React.ReactNode }) => React.createElement('span', null, children),
 }));
 
 vi.mock('../perseus/TeX', () => ({
-  TeX: ({ children }: any) => React.createElement('span', null, children),
+  TeX: ({ children }: { children: React.ReactNode }) => React.createElement('span', null, children),
 }));
 
 // Mock fetch globally
@@ -57,7 +57,7 @@ type QuestionNode = {
   code: string | null;
   label: string;
   question: string;
-  choices: any[];
+  choices: Array<{ content: string; correct: boolean }>;
   hints: string[];
   numChoices: number;
   showPath: string;

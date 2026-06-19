@@ -39,7 +39,8 @@ export function SidebarNode({
 }: SidebarNodeProps): React.JSX.Element {
     const isOpen = expanded.has(node.uuid);
     const [showAllQuestionsInSidebar, setShowAllQuestionsInSidebar] = useState(false);
-    const indentation = depth * 16; // 16px per depth level
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const indentation = depth * 16; // 16px per depth level - kept for potential future use
 
     const handleSelectTag = () => {
         // Expand the tag if it's not already expanded

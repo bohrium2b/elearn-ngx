@@ -1,19 +1,22 @@
 // Ensure `global` and `window` exist for libraries that expect a Node-like
 // global variable. This must run before MathJax modules are imported.
-declare const globalThis: any;
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const globalObj = globalThis as any;
 
-if (typeof globalThis.global === "undefined") {
+if (typeof globalObj.global === "undefined") {
   try {
-    globalThis.global = globalThis;
-  } catch (e) {
+    globalObj.global = globalObj;
+  } catch {
     // ignore
   }
 }
 
-if (typeof globalThis.window === "undefined") {
+if (typeof globalObj.window === "undefined") {
   try {
-    globalThis.window = globalThis;
-  } catch (e) {}
+    globalObj.window = globalObj;
+  } catch {
+    // ignore
+  }
 }
 
 // Provide a minimal MathJax config if one isn't present yet. This helps
@@ -21,6 +24,7 @@ if (typeof globalThis.window === "undefined") {
 // initialize. We'll point `mathjax` to the public `/mathjax` path which
 // is populated by the Vite build (see vite.config.ts static copy).
 if (typeof globalThis.MathJax === "undefined") {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   (globalThis as any).MathJax = {
     loader: {
       paths: { mathjax: "/mathjax" },
@@ -28,6 +32,7 @@ if (typeof globalThis.MathJax === "undefined") {
       // Provide a minimal `preLoad` implementation expected by some
       // MathJax consumers (e.g. bundles that call `MathJax.loader.preLoad`).
       preLoad: (...modules: string[]) => {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const L = (globalThis as any).MathJax.loader as any;
         if (!L || typeof L.require !== "function") return Promise.resolve([]);
         return Promise.all(modules.map((m) => L.require(m)));
@@ -41,9 +46,9 @@ if (typeof globalThis.MathJax === "undefined") {
 // assets when `@mathjax/src` is installed. It must be present for this
 // import to succeed; install with `yarn add @mathjax/src`.
 try {
-  // eslint-disable-next-line @typescript-eslint/no-var-requires
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
   require("@mathjax/src/bundle/tex-svg.js");
-} catch (e) {
+} catch {
   // If the package isn't installed, ignore — loader will fall back.
 }
 

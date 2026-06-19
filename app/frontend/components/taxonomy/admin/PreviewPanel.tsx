@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   Box,
   Typography,
@@ -64,13 +64,7 @@ export const PreviewPanel: React.FC<PreviewPanelProps> = ({ node, onNodeUpdate }
   const [selectedTag, setSelectedTag] = useState<Tag | null>(null);
   const [selectedExercise, setSelectedExercise] = useState<Exercise | null>(null);
 
-  useEffect(() => {
-    if (node) {
-      loadResources();
-    }
-  }, [node]);
-
-  const loadResources = async () => {
+  const loadResources = useCallback(async () => {
     if (!node) return;
 
     setLoading(true);
@@ -84,7 +78,13 @@ export const PreviewPanel: React.FC<PreviewPanelProps> = ({ node, onNodeUpdate }
     } finally {
       setLoading(false);
     }
-  };
+  }, [node]);
+
+  useEffect(() => {
+    if (node) {
+      loadResources();
+    }
+  }, [node, loadResources]);
 
   const handleTabChange = (_: React.SyntheticEvent, newValue: number) => {
     setActiveTab(newValue);

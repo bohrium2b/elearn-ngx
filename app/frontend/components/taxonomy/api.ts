@@ -13,6 +13,7 @@ import {
   Tag,
   Exercise,
   AllResources,
+  Question,
 } from "./types";
 import { showToast } from "./useToast";
 
@@ -79,7 +80,8 @@ export const taxonomyApi = {
     fetchJson<TaxonomyNode[]>(`${API_BASE}/${id}/ancestors`),
 
   // Get questions for a node
-  getQuestions: (id: string) => fetchJson<any[]>(`${API_BASE}/${id}/questions`),
+  getQuestions: (id: string) =>
+    fetchJson<Question[]>(`${API_BASE}/${id}/questions`),
 
   // Create node
   createNode: (data: Partial<TaxonomyNode>) =>

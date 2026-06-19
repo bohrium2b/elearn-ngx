@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useMemo } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
   Box,
   Typography,
@@ -16,7 +16,6 @@ import {
   AccordionDetails,
   Chip,
   LinearProgress,
-  SelectChangeEvent,
   Drawer,
   List,
   ListItem,
@@ -25,9 +24,6 @@ import {
   Radio,
   Divider,
   Pagination,
-  Paper,
-  Stack,
-  Collapse,
 } from '@mui/material';
 import AddCircleIcon from '@mui/icons-material/AddCircle';
 import DeleteIcon from '@mui/icons-material/Delete';
@@ -150,14 +146,13 @@ const ExerciseBuilder = ({
   exerciseId,
   initialTitle = '',
   initialSpec,
-  availableTags: propsTags = [],
+  availableTags: _propsTags = [],
   availableQuestions: propsQuestions = [],
   tagTree: propsTagTree = [],
   onSubmit,
 }: ExerciseBuilderProps) => {
   const [title, setTitle] = useState(initialTitle);
   const [rules, setRules] = useState<SelectionRule[]>(initialSpec?.selection_rules || []);
-  const [tags, setTags] = useState<TagInfo[]>(propsTags);
   const [tagTree, setTagTree] = useState<TagTreeNode[]>(propsTagTree);
   const [expandedTags, setExpandedTags] = useState<Set<string>>(new Set());
   const [errors, setErrors] = useState<string[]>([]);
@@ -184,7 +179,7 @@ const ExerciseBuilder = ({
         })
         .catch((err) => console.error('Failed to fetch tag tree:', err));
     }
-  }, []);
+  }, [tagTree.length]);
 
   // Get all questions from tree or props
   const questions = useMemo(() => {
@@ -230,7 +225,10 @@ const ExerciseBuilder = ({
   const handleRuleChange = (index: number, field: string, value: string | number) => {
     setRules((prev) => {
       const updated = [...prev];
-      (updated[index] as any)[field] = value;
+      const rule = updated[index];
+      if (rule) {
+        (rule as Record<string, string | number>)[field] = value;
+      }
       return updated;
     });
   };
@@ -338,8 +336,8 @@ const ExerciseBuilder = ({
       if (!response.ok) throw new Error('Failed to save');
       setSuccess('Exercise saved successfully!');
       setSnackbarOpen(true);
-    } catch (err: any) {
-      setErrors([err.message]);
+    } catch (err) {
+      setErrors([err instanceof Error ? err.message : 'Unknown error']);
     } finally {
       setIsLoading(false);
     }

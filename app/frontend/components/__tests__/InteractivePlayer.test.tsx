@@ -5,19 +5,28 @@ import React from 'react';
 
 // Mock BEFORE imports
 let mockGetScore: () => number | null = () => null;
-let mockGetSerializedState: () => any = () => null;
+let mockGetSerializedState: () => Record<string, unknown> | null = () => null;
+
+interface MockChoice {
+  content: string;
+  correct: boolean;
+}
+
+interface MockProps {
+  question: string;
+  choices?: MockChoice[];
+}
 
 vi.mock('../perseus/MultiChoice', () => ({
-  MultiChoice: React.forwardRef((props: any, ref: any) => {
+  MultiChoice: React.forwardRef(({ question, choices }: MockProps, ref: React.Ref<{ getScore: () => number | null }>) => {
     React.useImperativeHandle(ref, () => ({
       getScore: mockGetScore,
       getSerializedState: mockGetSerializedState,
       setSerializedState: () => { },
     }));
-    const { question, choices } = props;
     return React.createElement('div', { 'data-testid': 'mock-question' },
       React.createElement('p', null, question),
-      choices?.map((c: any, i: any) => React.createElement('span', { key: i }, c.content))
+      choices?.map((c, i) => React.createElement('span', { key: i }, c.content))
     );
   }),
 }));
@@ -37,11 +46,11 @@ vi.mock('@khanacademy/perseus-core', () => ({
 }));
 
 vi.mock('../perseus/Markdown', () => ({
-  default: ({ children }: any) => React.createElement('span', null, children),
+  default: ({ children }: { children: React.ReactNode }) => React.createElement('span', null, children),
 }));
 
 vi.mock('../perseus/TeX', () => ({
-  TeX: ({ children }: any) => React.createElement('span', null, children),
+  TeX: ({ children }: { children: React.ReactNode }) => React.createElement('span', null, children),
 }));
 
 // Import after mocks

@@ -17,7 +17,7 @@ export const tagName = 'course-assembler';
 
 if (!customElements.get(tagName)) {
   class CourseAssemblerElement extends HTMLElement {
-    private root: any;
+    private root: ReturnType<typeof createRoot> | null = null;
 
     connectedCallback() {
       this.root = createRoot(this);

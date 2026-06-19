@@ -26,13 +26,10 @@ import {
 } from "@mui/material";
 import {
   Add,
-  Delete,
-  Edit,
   NavigateNext,
   ExpandMore,
   ExpandLess,
   Folder,
-  FolderOpen,
   Label,
 } from "@mui/icons-material";
 import Grid from "@mui/material/Grid";
@@ -117,15 +114,6 @@ export const TaxonomyFolderView: React.FC<TaxonomyFolderViewProps> = ({
     if (!selectedQuestionId || !selectedTag) return null;
     return selectedTag.questions.find((q) => q.id === selectedQuestionId) ?? null;
   }, [selectedTag, selectedQuestionId]);
-
-  const flattenTags = (tags: TagNode[]): TagNode[] => {
-    const result: TagNode[] = [];
-    for (const tag of tags) {
-      result.push(tag);
-      result.push(...flattenTags(tag.children));
-    }
-    return result;
-  };
 
   const handleToggleExpand = (uuid: string) => {
     setExpandedTagUuids((current) => {
@@ -280,7 +268,7 @@ export const TaxonomyFolderView: React.FC<TaxonomyFolderViewProps> = ({
 
         <Box sx={{ flex: 1, overflow: "auto", py: 1 }}>
           {treeData.map((tag) => renderTagNode(tag))}
-          
+
           {/* Untagged Questions */}
           <Box
             onClick={() => setSelectedTagUuid("__untagged__")}
