@@ -5,6 +5,7 @@ class Question < ApplicationRecord
   before_validation :ensure_slug, on: :create
 
   has_and_belongs_to_many :tags
+  has_many :content_assignments, dependent: :destroy
 
   scope :untagged, -> { where.missing(:tags) }
 

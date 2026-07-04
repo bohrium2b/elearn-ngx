@@ -51,6 +51,47 @@ class QuestionTest < ActiveSupport::TestCase
     assert_equal 2, question.tags.count
   end
 
+  test "should have many content_assignments" do
+    question = create(:question)
+    taxonomy_node = create(:taxonomy_node, :topic)
+
+    content_assignment = create(:content_assignment, question: question, taxonomy_node: taxonomy_node)
+
+    assert_includes question.content_assignments, content_assignment
+    assert_equal 1, question.content_assignments.count
+  end
+
+  test "should destroy content_assignments when question is destroyed" do
+    question = create(:question)
+    taxonomy_node = create(:taxonomy_node, :topic)
+
+    create(:content_assignment, question: question, taxonomy_node: taxonomy_node)
+
+    assert_difference "ContentAssignment.count", -1 do
+      question.destroy
+    end
+  end
+
+  test "should support eager loading content_assignments" do
+    question = create(:question)
+    taxonomy_node = create(:taxonomy_node, :topic)
+
+    create(:content_assignment, question: question, taxonomy_node: taxonomy_node)
+
+    loaded_question = Question.includes(:content_assignments).find(question.id)
+
+    assert loaded_question.association(:content_assignments).loaded?
+    assert_equal 1, loaded_question.content_assignments.length
+  end
+
+  test "should have content_assignments association configured with dependent destroy" do
+    reflection = Question.reflect_on_association(:content_assignments)
+
+    assert reflection.present?
+    assert_equal :has_many, reflection.macro
+    assert_equal :destroy, reflection.options[:dependent]
+  end
+
   test "should be taggable" do
     question = create(:question)
     tag = create(:tag)

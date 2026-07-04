@@ -9,6 +9,7 @@
 !/storage/.keep
 /public/assets
 /public/vite*
+/public/mathjax
 
 # Vite / Node
 node_modules/

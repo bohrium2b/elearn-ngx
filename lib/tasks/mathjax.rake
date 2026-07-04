@@ -3,9 +3,9 @@
 require "fileutils"
 
 namespace :mathjax do
-  desc "Copy MathJax v4 bundle into public/mathjax so Rails serves worker files"
+  desc "Copy MathJax v4 source into public/mathjax so Rails serves worker files"
   task copy: :environment do
-    src = Rails.root.join("node_modules/@mathjax/src/bundle")
+    src = Rails.root.join("node_modules/@mathjax/src")
     dest = Rails.public_path.join("mathjax")
 
     unless File.directory?(src)
@@ -16,6 +16,9 @@ namespace :mathjax do
     FileUtils.rm_rf(dest)
     FileUtils.mkdir_p(dest)
     FileUtils.cp_r(Dir.glob(File.join(src, "*")), dest)
-    puts "Copied MathJax bundle to #{dest}"
+    puts "Copied MathJax source to #{dest}"
   end
 end
+
+# Hook into rails assets:precompile so MathJax is copied automatically
+Rake::Task["assets:precompile"].enhance(["mathjax:copy"])
