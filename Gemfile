@@ -12,7 +12,7 @@ gem "rails", "~> 7.2"
 gem "sprockets-rails"
 
 # ── Frontend pipeline (Vite + React) ──────────────────────────────────────────
-gem "vite_rails", "~> 3.0"
+gem "vite_rails", "~> 3.11"
 
 # ── Application features ──────────────────────────────────────────────────────
 gem "jbuilder"
