@@ -28,6 +28,11 @@
     <%= f.password_field :password_confirmation, autocomplete: "new-password", placeholder: "Confirm your password" %>
   </div>
 
+  <div class="form-group">
+    <%= f.label :roles %>
+    <%= f.select :roles, options_for_select([['Student', 'student'], ['Admin', 'admin']]), prompt: "Select a role" %>
+  </div>
+
   <div class="form-actions">
     <%= f.submit "Create Account" %>
   </div>

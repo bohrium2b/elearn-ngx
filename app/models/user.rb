@@ -18,7 +18,7 @@ class User < ApplicationRecord
   validates :email, presence: true, uniqueness: true
 
   # Callbacks
-  after_create :assign_default_role
+  after_create :assign_chosen_role
 
   # Role helper methods
   def student?
@@ -51,5 +51,9 @@ class User < ApplicationRecord
 
   def assign_default_role
     add_role(:student) if roles.blank?
+  end
+
+  def assign_chosen_role
+    add_role(roles.first) if roles.any?
   end
 end
