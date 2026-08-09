@@ -3,7 +3,7 @@ import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import "@testing-library/jest-dom/vitest";
 import React from "react";
 import { ThemeProvider, createTheme } from "@mui/material";
-import WorkspaceDashboard from "../workspace/WorkspaceDashboard";
+import WorkspaceDashboard from "../WorkspaceDashboard";
 
 const theme = createTheme();
 
