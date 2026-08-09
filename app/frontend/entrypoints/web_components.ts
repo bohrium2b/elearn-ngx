@@ -25,18 +25,27 @@ import { ThemeProvider, createTheme, CssBaseline } from "@mui/material";
 import { workspaceLightTheme } from "./theme";
 import { ThemeProviderWrapper } from "../context/ThemeContext";
 import type { ComponentType } from "react";
+import { ErrorBoundary } from "../components/shared/ErrorBoundary";
+import { Toaster } from "react-hot-toast";
+import DOMPurify from "dompurify";
 
 // ── HTML Sanitization ────────────────────────────────────────────────────────
+const ALLOWED_TAGS = [
+  "p", "strong", "em", "ul", "ol", "li", "br", "table", "tr", "td", "th",
+  "thead", "tbody", "h1", "h2", "h3", "h4", "h5", "h6", "a", "blockquote",
+  "code", "pre",
+] as const;
+
+const ALLOWED_ATTR = ["href", "target", "rel"] as const;
+
 function sanitizeHtml(html: string): string {
-  return html
-    .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, "")
-    .replace(/<iframe\b[^<]*(?:(?!<\/iframe>)<[^<]*)*<\/iframe>/gi, "")
-    .replace(/<object\b[^<]*(?:(?!<\/object>)<[^<]*)*<\/object>/gi, "")
-    .replace(/<embed\b[^>]*>/gi, "")
-    .replace(/\s+on\w+\s*=\s*(?:"[^"]*"|'[^']*'|[^\s>]+)/gi, "")
-    .replace(/href\s*=\s*(?:"javascript:[^"]*"|'javascript:[^']*')/gi, 'href="#"')
-    .replace(/src\s*=\s*(?:"javascript:[^"]*"|'javascript:[^']*')/gi, 'src="#"');
+  return DOMPurify.sanitize(html, {
+    ALLOWED_TAGS: [...ALLOWED_TAGS],
+    ALLOWED_ATTR: [...ALLOWED_ATTR],
+  });
 }
+
+export { sanitizeHtml, ALLOWED_TAGS, ALLOWED_ATTR };
 
 // ── Default MUI theme (override in your own ThemeProvider if desired) ─────────
 const defaultTheme = createTheme();
@@ -241,7 +250,10 @@ class LazyIslandElement extends HTMLElement {
           ThemeProvider,
           { theme: workspaceLightTheme || defaultTheme },
           React.createElement(CssBaseline, null),
-          React.createElement(Component, props, childNode),
+          React.createElement(ErrorBoundary, null,
+            React.createElement(Component, props, childNode),
+          ),
+          React.createElement(Toaster, { position: "bottom-left" }),
         ),
       ),
     );

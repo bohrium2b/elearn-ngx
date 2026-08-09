@@ -2,6 +2,7 @@
 
 class LearningPathwaysController < AuthenticatedController
   before_action :set_course, only: %i[show progress start_topic complete_topic]
+  skip_after_action :verify_authorized
 
   def index
     @courses = TaxonomyNode.courses.ordered

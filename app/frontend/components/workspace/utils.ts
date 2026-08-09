@@ -1,5 +1,7 @@
 import type { QuestionNode, TagNode, WorkspaceState } from "./types";
 import type { Question } from "../perseus/types";
+import { apiRequest } from "@/lib/apiClient";
+import { WorkspaceStateSchema } from "@/lib/schemas/workspace";
 
 const EMPTY_CHOICES: QuestionNode["choices"] = [];
 const EMPTY_HINTS: string[] = [];
@@ -25,12 +27,24 @@ export function toPerseusQuestion(question: QuestionNode): Question {
 
 export async function fetchWorkspaceState(
   refreshPath: string,
-): Promise<WorkspaceState | null> {
-  const response = await fetch(refreshPath, {
-    headers: { Accept: "application/json" },
+  etag?: string | null,
+): Promise<{ data: WorkspaceState | null; etag: string | null }> {
+  const headers: Record<string, string> = { Accept: "application/json" };
+  if (etag) {
+    headers["If-None-Match"] = etag;
+  }
+
+  const payload = await apiRequest<unknown>(refreshPath, {
+    headers,
+    allow304: true,
   });
-  if (!response.ok) return null;
-  return (await response.json()) as WorkspaceState;
+
+  if (payload === null) {
+    return { data: null, etag: etag ?? null };
+  }
+
+  const validated = WorkspaceStateSchema.parse(payload);
+  return { data: validated, etag: etag ?? null };
 }
 
 export function cloneTree(tree: TagNode[]): TagNode[] {

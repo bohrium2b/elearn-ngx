@@ -1,5 +1,7 @@
 # frozen_string_literal: true
 
+require "digest"
+
 class WorkspaceController < AuthenticatedController
   before_action :authenticate_user!, except: [:show]
 
@@ -7,10 +9,19 @@ class WorkspaceController < AuthenticatedController
     authorize :workspace, :show?
     @untagged_questions = Question.untagged
     @tree_data = Tag.where(parent_id: nil).map { |root_tag| assemble_tree_node(root_tag) }
+    payload = build_workspace_payload
+    etag = Digest::MD5.hexdigest(payload.to_json)
 
     respond_to do |format|
       format.html
-      format.json { render json: build_workspace_payload }
+      format.json do
+        if request.fresh?(etag)
+          head :not_modified
+        else
+          response.headers["ETag"] = etag
+          render json: payload
+        end
+      end
     end
   end
 

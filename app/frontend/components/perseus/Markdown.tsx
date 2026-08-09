@@ -2,7 +2,7 @@ import { default as ReactMarkdown } from "react-markdown";
 import remarkGfm from "remark-gfm";
 import remarkGemoji from "remark-gemoji";
 import rehypeHighlight from "rehype-highlight";
-import rehypeRaw from "rehype-raw";
+import rehypeRaw from "rehype-raw"; // Using this is necessary - DO NOT REMOVE!!
 import TeX from "./TeX";
 import "primer-markdown/build/build.css";
 import "@fontsource/noto-serif/index.css";
@@ -12,7 +12,7 @@ import React, { useRef, useState, useEffect, memo } from "react";
 
 export interface MarkdownProps {
   children: React.ReactNode;
-  fontFamily?: "serif" | "sans-serif"
+  fontFamily?: "serif" | "sans-serif";
 }
 
 const Markdown: React.FC<MarkdownProps> = memo(({ children, fontFamily }) => {
@@ -75,7 +75,13 @@ const Markdown: React.FC<MarkdownProps> = memo(({ children, fontFamily }) => {
   return (
     <div
       className="markdown-body"
-      style={{ fontFamily: fontFamily === "sans-serif" ? "Roboto, sans-serif" : "Noto Serif, serif", position: "relative" }}
+      style={{
+        fontFamily:
+          fontFamily === "sans-serif"
+            ? "Roboto, sans-serif"
+            : "Noto Serif, serif",
+        position: "relative",
+      }}
       ref={containerRef}
     >
       <ReactMarkdown

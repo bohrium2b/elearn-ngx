@@ -23,6 +23,7 @@ import {
 } from '@mui/icons-material';
 import { TaxonomyNode, Tag, Question } from '../types';
 import { taxonomyApi } from '../api';
+import { useDebounce } from '@/lib/hooks/useDebounce';
 
 interface InventoryPanelProps {
   onDragStart: (item: TaxonomyNode | Question | Tag, type: 'topic' | 'question' | 'tag') => void;
@@ -36,6 +37,7 @@ interface TagWithQuestions extends Tag {
 
 export const InventoryPanel: React.FC<InventoryPanelProps> = ({ onDragStart }) => {
   const [searchQuery, setSearchQuery] = useState('');
+  const debouncedSearchQuery = useDebounce(searchQuery, 300);
   const [activeTab, setActiveTab] = useState(0);
   const [topics, setTopics] = useState<TaxonomyNode[]>([]);
   const [tags, setTags] = useState<TagWithQuestions[]>([]);
@@ -74,14 +76,13 @@ export const InventoryPanel: React.FC<InventoryPanelProps> = ({ onDragStart }) =
   };
 
   const filteredTopics = topics.filter(t =>
-    t.name.toLowerCase().includes(searchQuery.toLowerCase())
+    t.name.toLowerCase().includes(debouncedSearchQuery.toLowerCase())
   );
 
   const filteredQuestions = questions.filter(q =>
-    q.question?.toLowerCase().includes(searchQuery.toLowerCase())
+    q.question?.toLowerCase().includes(debouncedSearchQuery.toLowerCase())
   );
 
-  // Filter tags and their children recursively
   const filterTags = (tagList: TagWithQuestions[], query: string): TagWithQuestions[] => {
     return tagList.filter(tag => {
       const matchesQuery = tag.name.toLowerCase().includes(query.toLowerCase());
@@ -93,7 +94,7 @@ export const InventoryPanel: React.FC<InventoryPanelProps> = ({ onDragStart }) =
     }));
   };
 
-  const filteredTags = filterTags(tags, searchQuery);
+  const filteredTags = filterTags(tags, debouncedSearchQuery);
 
   const handleDragStart = (e: React.DragEvent, item: TaxonomyNode | Question | Tag, type: 'topic' | 'question' | 'tag') => {
     e.dataTransfer.setData('application/json', JSON.stringify({ type, item }));

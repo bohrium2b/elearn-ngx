@@ -9,6 +9,8 @@ class Question < ApplicationRecord
 
   has_and_belongs_to_many :tags
 
+  has_many :content_assignments, dependent: :destroy
+
   scope :untagged, -> { where.missing(:tags) }
 
   validate :config_data_schema

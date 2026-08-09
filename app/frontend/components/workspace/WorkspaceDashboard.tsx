@@ -50,6 +50,7 @@ import { AddQuestionCard } from "./AddQuestionCard";
 import { QuestionCard } from "./QuestionCard";
 import { SidebarNode } from "./SidebarNode";
 import { QuestionDetailPanel } from "./QuestionDetailPanel";
+import { useErrorHandler } from "@/lib/hooks/useErrorHandler";
 
 export const WorkspaceDashboard: React.FC<WorkspaceProps> = ({
     treeData,
@@ -58,6 +59,7 @@ export const WorkspaceDashboard: React.FC<WorkspaceProps> = ({
     classifyPath,
     csrfToken,
 }) => {
+    const { handleError, showToast } = useErrorHandler();
     const [state, setState] = useState<WorkspaceState>({
         treeData: cloneTree(treeData),
         untaggedQuestions: [...untaggedQuestions],
@@ -71,6 +73,7 @@ export const WorkspaceDashboard: React.FC<WorkspaceProps> = ({
     const resizeRef = useRef<HTMLDivElement>(null);
 
     const lastWorkspaceSnapshot = useRef("");
+    const workspaceEtag = useRef<string | null>(null);
     const [actionsAnchorEl, setActionsAnchorEl] = useState<HTMLElement | null>(null);
     const [slugEditQuestionId, setSlugEditQuestionId] = useState<number | null>(null);
     const [slugDraft, setSlugDraft] = useState<string>("");
@@ -96,13 +99,19 @@ export const WorkspaceDashboard: React.FC<WorkspaceProps> = ({
 
     useEffect(() => {
         const syncWorkspace = async () => {
-            const payload = await fetchWorkspaceState(refreshPath);
-            if (!payload) return;
-            const snapshot = JSON.stringify(payload);
-            if (snapshot === lastWorkspaceSnapshot.current) return;
+            try {
+                const result = await fetchWorkspaceState(refreshPath, workspaceEtag.current);
+                if (!result.data) return;
 
-            lastWorkspaceSnapshot.current = snapshot;
-            setState({ treeData: cloneTree(payload.treeData), untaggedQuestions: [...payload.untaggedQuestions] });
+                const snapshot = JSON.stringify(result.data);
+                if (snapshot === lastWorkspaceSnapshot.current) return;
+
+                workspaceEtag.current = result.etag;
+                lastWorkspaceSnapshot.current = snapshot;
+                setState({ treeData: cloneTree(result.data.treeData), untaggedQuestions: [...result.data.untaggedQuestions] });
+            } catch (error) {
+                handleError(error);
+            }
         };
 
         void syncWorkspace();
@@ -111,7 +120,7 @@ export const WorkspaceDashboard: React.FC<WorkspaceProps> = ({
         }, 10000);
 
         return () => window.clearInterval(intervalId);
-    }, [refreshPath]);
+    }, [refreshPath, handleError]);
 
     const selectedTag = useMemo(() => findSelectedTag(state.treeData, selectedTagUuid), [state.treeData, selectedTagUuid]);
     const selectedQuestion = useMemo(
@@ -153,10 +162,17 @@ export const WorkspaceDashboard: React.FC<WorkspaceProps> = ({
 
     const handleQuestionDeleted = (questionId: number) => {
         setSelectedQuestionId((current) => (current === questionId ? null : current));
-        void fetchWorkspaceState(refreshPath).then((payload) => {
-            if (!payload) return;
-            lastWorkspaceSnapshot.current = JSON.stringify(payload);
-            setState({ treeData: cloneTree(payload.treeData), untaggedQuestions: [...payload.untaggedQuestions] });
+        void fetchWorkspaceState(refreshPath).then((result) => {
+            if (!result.data) {
+                handleError(new Error("Failed to refresh workspace after deletion"));
+                return;
+            }
+            workspaceEtag.current = result.etag;
+            lastWorkspaceSnapshot.current = JSON.stringify(result.data);
+            setState({ treeData: cloneTree(result.data.treeData), untaggedQuestions: [...result.data.untaggedQuestions] });
+            showToast("Question deleted successfully");
+        }).catch((error) => {
+            handleError(error);
         });
     };
 
@@ -183,13 +199,18 @@ export const WorkspaceDashboard: React.FC<WorkspaceProps> = ({
 
         setShowCreateTagModal(false);
         setCreateTagParentId(null);
-        if (!response.ok) return;
+        if (!response.ok) {
+            handleError(new Error("Failed to create tag"));
+            return;
+        }
 
-        const payload = await fetchWorkspaceState(refreshPath);
-        if (!payload) return;
+        const result = await fetchWorkspaceState(refreshPath);
+        if (!result.data) return;
 
-        lastWorkspaceSnapshot.current = JSON.stringify(payload);
-        setState({ treeData: cloneTree(payload.treeData), untaggedQuestions: [...payload.untaggedQuestions] });
+        workspaceEtag.current = result.etag;
+        lastWorkspaceSnapshot.current = JSON.stringify(result.data);
+        setState({ treeData: cloneTree(result.data.treeData), untaggedQuestions: [...result.data.untaggedQuestions] });
+        showToast("Tag created successfully");
     };
 
     const handleCreateQuestion = async () => {
@@ -223,15 +244,19 @@ export const WorkspaceDashboard: React.FC<WorkspaceProps> = ({
             body: JSON.stringify(payload),
         });
 
-        if (!response.ok) return;
+        if (!response.ok) {
+            handleError(new Error("Failed to create question"));
+            return;
+        }
 
         const workspace = await fetchWorkspaceState(refreshPath);
-        if (!workspace) return;
+        if (!workspace.data) return;
 
-        lastWorkspaceSnapshot.current = JSON.stringify(workspace);
-        setState({ treeData: cloneTree(workspace.treeData), untaggedQuestions: [...workspace.untaggedQuestions] });
+        workspaceEtag.current = workspace.etag;
+        lastWorkspaceSnapshot.current = JSON.stringify(workspace.data);
+        setState({ treeData: cloneTree(workspace.data.treeData), untaggedQuestions: [...workspace.data.untaggedQuestions] });
 
-        const all = [...workspace.untaggedQuestions, ...flattenTags(workspace.treeData).flatMap((node) => node.questions)];
+        const all = [...workspace.data.untaggedQuestions, ...flattenTags(workspace.data.treeData).flatMap((node) => node.questions)];
         const created = all.find((q) => q.slug === slug);
         if (created) {
             setSelectedQuestionId(created.id);
@@ -271,15 +296,19 @@ export const WorkspaceDashboard: React.FC<WorkspaceProps> = ({
             body: JSON.stringify(payload),
         });
 
-        if (!response.ok) return;
+        if (!response.ok) {
+            handleError(new Error("Failed to create question"));
+            return;
+        }
 
         const workspace = await fetchWorkspaceState(refreshPath);
-        if (!workspace) return;
+        if (!workspace.data) return;
 
-        lastWorkspaceSnapshot.current = JSON.stringify(workspace);
-        setState({ treeData: cloneTree(workspace.treeData), untaggedQuestions: [...workspace.untaggedQuestions] });
+        workspaceEtag.current = workspace.etag;
+        lastWorkspaceSnapshot.current = JSON.stringify(workspace.data);
+        setState({ treeData: cloneTree(workspace.data.treeData), untaggedQuestions: [...workspace.data.untaggedQuestions] });
 
-        const all = [...workspace.untaggedQuestions, ...flattenTags(workspace.treeData).flatMap((node) => node.questions)];
+        const all = [...workspace.data.untaggedQuestions, ...flattenTags(workspace.data.treeData).flatMap((node) => node.questions)];
         const created = all.find((q) => q.slug === slug);
         if (!created) return;
 
@@ -293,15 +322,20 @@ export const WorkspaceDashboard: React.FC<WorkspaceProps> = ({
                 body: JSON.stringify({ question_id: created.id, target_tag_id: targetTagId, source_tag_id: null }),
             });
 
-            if (!classifyResp.ok) return;
-        } catch {
-            // noop
+            if (!classifyResp.ok) {
+                handleError(new Error("Failed to classify question"));
+                return;
+            }
+        } catch (error) {
+            handleError(error);
+            return;
         }
 
         const workspace2 = await fetchWorkspaceState(refreshPath);
-        if (!workspace2) return;
-        lastWorkspaceSnapshot.current = JSON.stringify(workspace2);
-        setState({ treeData: cloneTree(workspace2.treeData), untaggedQuestions: [...workspace2.untaggedQuestions] });
+        if (!workspace2.data) return;
+        workspaceEtag.current = workspace2.etag;
+        lastWorkspaceSnapshot.current = JSON.stringify(workspace2.data);
+        setState({ treeData: cloneTree(workspace2.data.treeData), untaggedQuestions: [...workspace2.data.untaggedQuestions] });
 
         setSelectedQuestionId(created.id);
         setSlugEditQuestionId(created.id);
@@ -314,9 +348,15 @@ export const WorkspaceDashboard: React.FC<WorkspaceProps> = ({
     const handleDeleteTag = async (deletePath: string) => {
         setShowDeleteTagConfirm(true);
         performDeleteTag.current = async () => {
-            const response = await fetch(deletePath, { method: "DELETE", headers: { "X-CSRF-Token": csrfToken } });
-            if (response.ok) {
-                window.location.href = "/";
+            try {
+                const response = await fetch(deletePath, { method: "DELETE", headers: { "X-CSRF-Token": csrfToken } });
+                if (response.ok) {
+                    window.location.href = "/";
+                } else {
+                    handleError(new Error("Failed to delete tag"));
+                }
+            } catch (error) {
+                handleError(error);
             }
         };
     };
@@ -352,16 +392,18 @@ export const WorkspaceDashboard: React.FC<WorkspaceProps> = ({
         });
 
         if (!response.ok) {
-            window.alert("Failed to update tag");
+            handleError(new Error("Failed to update tag"));
             return;
         }
 
         const workspace = await fetchWorkspaceState(refreshPath);
-        if (!workspace) return;
+        if (!workspace.data) return;
 
-        lastWorkspaceSnapshot.current = JSON.stringify(workspace);
-        setState({ treeData: cloneTree(workspace.treeData), untaggedQuestions: [...workspace.untaggedQuestions] });
+        workspaceEtag.current = workspace.etag;
+        lastWorkspaceSnapshot.current = JSON.stringify(workspace.data);
+        setState({ treeData: cloneTree(workspace.data.treeData), untaggedQuestions: [...workspace.data.untaggedQuestions] });
         setIsEditingTag(false);
+        showToast("Tag updated successfully");
     };
 
     const handleQuestionDragStart = (_payload: DragPayload) => undefined;
@@ -404,8 +446,9 @@ export const WorkspaceDashboard: React.FC<WorkspaceProps> = ({
             if (!response.ok) {
                 throw new Error(await response.text());
             }
-        } catch {
+        } catch (error) {
             setState(previousState);
+            handleError(error);
         }
     };
 
@@ -743,9 +786,10 @@ export const WorkspaceDashboard: React.FC<WorkspaceProps> = ({
                                                         if (!resp.ok) return;
 
                                                         const workspace = await fetchWorkspaceState(refreshPath);
-                                                        if (!workspace) return;
-                                                        lastWorkspaceSnapshot.current = JSON.stringify(workspace);
-                                                        setState({ treeData: cloneTree(workspace.treeData), untaggedQuestions: [...workspace.untaggedQuestions] });
+                                                        if (!workspace.data) return;
+                                                        workspaceEtag.current = workspace.etag;
+                                                        lastWorkspaceSnapshot.current = JSON.stringify(workspace.data);
+                                                        setState({ treeData: cloneTree(workspace.data.treeData), untaggedQuestions: [...workspace.data.untaggedQuestions] });
                                                         setSlugEditQuestionId(null);
                                                         setEditAfterSlugSaveId(selectedQuestion.id);
                                                     } catch {
