@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
-class TopicTagsController < ApplicationController
-  protect_from_forgery with: :null_session
+class TopicTagsController < AuthenticatedController
+  skip_after_action :verify_authorized, only: :index
   before_action :set_topic, only: %i[index create]
   before_action :set_topic_tag, only: [:destroy]
 
@@ -18,8 +18,9 @@ class TopicTagsController < ApplicationController
 
   # POST /topic_tags
   def create
-    @topic_tag = @topic.topic_tags.build(topic_tag_params)
-
+    @topic_tag = TopicTag.new(topic_tag_params)
+    @topic_tag.taxonomy_node = @topic if @topic
+    authorize @topic_tag
     if @topic_tag.save
       render json: serialize_topic_tag(@topic_tag), status: :created
     else
@@ -29,6 +30,7 @@ class TopicTagsController < ApplicationController
 
   # DELETE /topic_tags/:id
   def destroy
+    authorize @topic_tag
     @topic_tag.destroy
     head :no_content
   end

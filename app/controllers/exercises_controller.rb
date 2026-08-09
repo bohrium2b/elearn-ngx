@@ -1,9 +1,9 @@
 # frozen_string_literal: true
 
-class ExercisesController < ApplicationController
-  before_action :authenticate_user!, except: %i[index show start practice]
+class ExercisesController < AuthenticatedController
+  skip_before_action :authenticate_user!, only: %i[index show start practice]
+  skip_after_action :verify_authorized, only: %i[index practice]
   before_action :set_exercise, only: %i[show edit update destroy start]
-  after_action :verify_authorized, except: %i[index practice]
 
   def index
     @exercises = Exercise.regular.order(created_at: :desc)
@@ -96,20 +96,10 @@ class ExercisesController < ApplicationController
   private
 
   def set_exercise
-    @exercise = find_exercise_by_param(params[:id])
+    @exercise = Exercise.find_by_uuid_or_slug_or_id(params[:id])
     return if @exercise
 
     redirect_to exercises_path, alert: t("messages.exercise_not_found")
-  end
-
-  def find_exercise_by_param(param)
-    key = param.to_s
-    if key.length >= 36
-      uuid_candidate = key[0, 36]
-      exercise = Exercise.find_by(uuid: uuid_candidate)
-      return exercise if exercise
-    end
-    Exercise.find_by(uuid: key) || Exercise.find_by(slug: key) || Exercise.find_by(id: key)
   end
 
   def exercise_params

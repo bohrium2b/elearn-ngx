@@ -152,9 +152,9 @@ class QuestionTest < ActiveSupport::TestCase
   # ============================================================================
 
   test "should store config_data as json" do
-    question = create(:question, config_data: { question: "Test?", choices: [] })
+    question = create(:question, config_data: { question: "Test question here?", choices: [{content: "A", correct: true}, {content: "B", correct: false}], numChoices: 1 })
     question.reload
-    assert_equal "Test?", question.config_data["question"]
+    assert_equal "Test question here?", question.config_data["question"]
   end
 
   test "should handle nil config_data" do
@@ -166,8 +166,66 @@ class QuestionTest < ActiveSupport::TestCase
   # ensure_valid_question_structure
   # ============================================================================
 
-  test "ensure_valid_question_structure should exist as a method" do
-    question = Question.new
-    assert_respond_to question, :ensure_valid_question_structure
+  test "should sanitize XSS in question text" do
+    question = build(:question, config_data: {
+      question: "<script>alert('xss')</script>What is 2+2?",
+      choices: [{content: "4", correct: true}, {content: "3", correct: false}],
+      numChoices: 1
+    })
+    question.save!
+    question.reload
+    assert_equal "alert('xss')What is 2+2?", question.config_data["question"]
+  end
+
+  test "should sanitize XSS in choice content" do
+    question = build(:question, config_data: {
+      question: "What is 2+2?",
+      choices: [
+        {content: "<img src=x onerror=alert(1)>4", correct: true},
+        {content: "3", correct: false}
+      ],
+      numChoices: 1
+    })
+    question.save!
+    question.reload
+    assert_equal "4", question.config_data["choices"].first["content"]
+  end
+
+  test "should sanitize XSS in hints" do
+    question = build(:question, config_data: {
+      question: "What is 2+2?",
+      choices: [{content: "4", correct: true}, {content: "3", correct: false}],
+      hints: ["<script>alert('xss')</script>"],
+      numChoices: 1
+    })
+    question.save!
+    question.reload
+    assert_equal "alert('xss')", question.config_data["hints"].first
+  end
+
+  # ============================================================================
+  # find_by_param
+  # ============================================================================
+
+  test "find_by_param finds by uuid" do
+    question = create(:question)
+    found = Question.find_by_param(question.uuid)
+    assert_equal question, found
+  end
+
+  test "find_by_param finds by slug" do
+    question = create(:question)
+    found = Question.find_by_param(question.slug)
+    assert_equal question, found
+  end
+
+  test "find_by_param finds by id" do
+    question = create(:question)
+    found = Question.find_by_param(question.id.to_s)
+    assert_equal question, found
+  end
+
+  test "find_by_param returns nil for non-existent record" do
+    assert_nil Question.find_by_param("non-existent")
   end
 end

@@ -1,14 +1,12 @@
 # frozen_string_literal: true
 
 module Admin
-  class UsersController < ApplicationController
-    before_action :authenticate_user!
+  class UsersController < AuthenticatedController
     before_action :verify_admin
-    after_action :verify_authorized
 
     def index
-      @users = User.includes(:roles).all
       authorize User
+      @users = User.includes(:roles).all
 
       respond_to do |format|
         format.html
@@ -69,12 +67,14 @@ module Admin
     def verify_admin
       return if current_user.admin?
 
-      flash[:alert] = t("messages.not_authorized")
-      redirect_to root_path
+      respond_to do |format|
+        format.html { redirect_to root_path, alert: t("messages.not_authorized") }
+        format.json { render json: { error: t("messages.not_authorized") }, status: :forbidden }
+      end
     end
 
     def user_params
-      params.require(:user).permit(:username, :email, :avatar_url, role_ids: [])
+      params.require(:user).permit(:username, :email, :avatar_url)
     end
   end
 end

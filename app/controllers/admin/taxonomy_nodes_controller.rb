@@ -1,12 +1,11 @@
 # frozen_string_literal: true
 
 module Admin
-  class TaxonomyNodesController < ApplicationController
-    before_action :authenticate_user!
-    before_action :require_admin!
+  class TaxonomyNodesController < AuthenticatedController
     before_action :set_taxonomy_node, only: %i[show update destroy reorder move]
 
     def index
+      authorize TaxonomyNode
       @nodes = TaxonomyNode.ordered
 
       respond_to do |format|
@@ -15,13 +14,17 @@ module Admin
       end
     end
 
-    def assemble; end
+    def assemble
+      authorize TaxonomyNode
+    end
 
     def show
+      authorize @node
       render json: serialize_node(@node)
     end
 
     def create
+      authorize TaxonomyNode
       @node = TaxonomyNode.new(taxonomy_node_params)
 
       if @node.save
@@ -32,6 +35,7 @@ module Admin
     end
 
     def update
+      authorize @node
       if @node.update(taxonomy_node_params)
         render json: serialize_node(@node)
       else
@@ -40,22 +44,34 @@ module Admin
     end
 
     def destroy
+      authorize @node
       @node.destroy
       head :no_content
     end
 
     def reorder
-      params[:position].to_i
-      render json: serialize_node(@node)
+      authorize @node
+      if @node.update(position: params[:position].to_i)
+        render json: serialize_node(@node)
+      else
+        render json: { errors: @node.errors.full_messages }, status: :unprocessable_content
+      end
     end
 
     def move
-      new_parent = TaxonomyNode.find_by(move_params[:new_parent_id])
-      @node.update(parent: new_parent, course: new_parent.course)
-      render json: serialize_node(@node)
+      authorize @node
+      new_parent = TaxonomyNode.find_by_param(params.require(:move).require(:new_parent_id))
+      return render json: { error: "Parent node not found" }, status: :not_found unless new_parent
+
+      if @node.update(parent: new_parent, course: new_parent.course)
+        render json: serialize_node(@node)
+      else
+        render json: { errors: @node.errors.full_messages }, status: :unprocessable_content
+      end
     end
 
     def full_tree
+      authorize TaxonomyNode
       @courses = TaxonomyNode.course.roots.ordered.includes(children: { children: { children: :questions } })
       render json: serialize_full_tree(@courses)
     end
@@ -63,8 +79,8 @@ module Admin
     private
 
     def set_taxonomy_node
-      @node = TaxonomyNode.find_by(param: params[:id])
-      render json: { error: "Not found" }, status: :not_found unless @node
+      @node = TaxonomyNode.find_by_param(params[:id])
+      return render json: { error: "Not found" }, status: :not_found unless @node
     end
 
     def taxonomy_node_params
@@ -74,10 +90,6 @@ module Admin
 
     def move_params
       params.require(:move).permit(:new_parent_id)
-    end
-
-    def require_admin!
-      render json: { error: "Unauthorized" }, status: :forbidden unless current_user&.admin?
     end
 
     def serialize_node(node)

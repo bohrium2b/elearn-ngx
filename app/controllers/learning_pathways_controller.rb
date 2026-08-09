@@ -1,7 +1,6 @@
 # frozen_string_literal: true
 
-class LearningPathwaysController < ApplicationController
-  before_action :authenticate_user!
+class LearningPathwaysController < AuthenticatedController
   before_action :set_course, only: %i[show progress start_topic complete_topic]
 
   def index
@@ -25,20 +24,24 @@ class LearningPathwaysController < ApplicationController
   end
 
   def start_topic
-    topic = TaxonomyNode.find_by(param: params[:topic_id])
+    topic = TaxonomyNode.find_by_param(params[:topic_id])
+    return render json: { error: "Topic not found" }, status: :not_found unless topic
+
     render json: { status: "started", topic_id: topic.id }
   end
 
   def complete_topic
-    topic = TaxonomyNode.find_by(param: params[:topic_id])
+    topic = TaxonomyNode.find_by_param(params[:topic_id])
+    return render json: { error: "Topic not found" }, status: :not_found unless topic
+
     render json: { status: "completed", topic_id: topic.id }
   end
 
   private
 
   def set_course
-    @course = TaxonomyNode.courses.find_by(param: params[:id])
-    render json: { error: "Course not found" }, status: :not_found unless @course
+    @course = TaxonomyNode.courses.find_by_param(params[:id])
+    return render json: { error: "Course not found" }, status: :not_found unless @course
   end
 
   def serialize_course_summary(course)

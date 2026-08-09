@@ -1,25 +1,26 @@
 # frozen_string_literal: true
 
-class TopicExercisesController < ApplicationController
-  protect_from_forgery with: :null_session
+class TopicExercisesController < AuthenticatedController
+  skip_after_action :verify_authorized, only: :index
   before_action :set_topic, only: %i[index create]
   before_action :set_topic_exercise, only: [:destroy]
 
   # GET /topic_exercises?taxonomy_node_id=:id
   def index
     @topic_exercises = if @topic
-                         @topic.topic_exercises.includes(:exercise).ordered
-                       else
-                         TopicExercise.includes(:taxonomy_node, :exercise).ordered.all
-                       end
+                          @topic.topic_exercises.includes(:exercise).ordered
+                        else
+                          TopicExercise.includes(:taxonomy_node, :exercise).ordered.all
+                        end
 
     render json: @topic_exercises.map { |te| serialize_topic_exercise(te) }
   end
 
   # POST /topic_exercises
   def create
-    @topic_exercise = @topic.topic_exercises.build(topic_exercise_params)
-
+    @topic_exercise = TopicExercise.new(topic_exercise_params)
+    @topic_exercise.taxonomy_node = @topic if @topic
+    authorize @topic_exercise
     if @topic_exercise.save
       render json: serialize_topic_exercise(@topic_exercise), status: :created
     else
@@ -29,6 +30,7 @@ class TopicExercisesController < ApplicationController
 
   # DELETE /topic_exercises/:id
   def destroy
+    authorize @topic_exercise
     @topic_exercise.destroy
     head :no_content
   end

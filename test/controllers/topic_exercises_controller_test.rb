@@ -9,6 +9,8 @@ class TopicExercisesControllerTest < ActionDispatch::IntegrationTest
     @unit = TaxonomyNode.create!(name: "Test Unit", level: :unit, parent: @part, course: @course)
     @topic = TaxonomyNode.create!(name: "Test Topic", level: :topic, parent: @unit, course: @course)
     @exercise = create(:exercise, title: "Test Exercise")
+    @user = create(:user, :content_author)
+    sign_in @user
   end
 
   test "should get index" do

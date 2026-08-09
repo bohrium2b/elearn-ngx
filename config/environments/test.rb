@@ -8,7 +8,7 @@ Rails.application.configure do
   config.eager_load = true
   config.consider_all_requests_local = true
   config.action_controller.perform_caching = false
-  config.cache_store = :null_store
+  config.cache_store = :memory_store
 
   # ── Exceptions ────────────────────────────────────────────────────────────
   config.action_dispatch.show_exceptions = :rescuable

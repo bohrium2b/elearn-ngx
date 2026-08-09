@@ -1,6 +1,8 @@
 # frozen_string_literal: true
 
-class TaxonomyNodesController < ApplicationController
+class TaxonomyNodesController < AuthenticatedController
+  skip_before_action :authenticate_user!
+  skip_after_action :verify_authorized
   before_action :set_taxonomy_node, only: %i[show update destroy descendants ancestors questions all_resources]
 
   def index
@@ -9,7 +11,6 @@ class TaxonomyNodesController < ApplicationController
   end
 
   def show
-    Rails.logger.info "Showing taxonomy node: #{@taxonomy_node.inspect}"
     render json: serialize_node(@taxonomy_node)
   end
 

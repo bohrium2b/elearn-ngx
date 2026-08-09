@@ -33,6 +33,8 @@ class ExerciseResolver
     return unless tag
 
     available_questions = fetch_available_questions(tag)
+    return if available_questions.empty?
+
     sample_count = calculate_sample_count(rule["count"], available_questions.count)
     sampled_questions = available_questions.sample(sample_count)
 
@@ -45,6 +47,7 @@ class ExerciseResolver
   end
 
   def calculate_sample_count(requested_count, available_count)
+    return available_count if requested_count.nil? || requested_count <= 0
     [requested_count, available_count].min
   end
 
@@ -65,7 +68,6 @@ class ExerciseResolver
   end
 
   def question_to_plain_text_data(question)
-    # Extract data from config_data or use defaults
     config = question.config_data || {}
     {
       uuid: question.uuid,

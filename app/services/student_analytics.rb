@@ -49,17 +49,16 @@ class StudentAnalytics
     sessions = @user.assessment_sessions
     recent_sessions = sessions.in_time_window(30.days)
     weekly_sessions = sessions.in_time_window(7.days)
-    all_sessions = sessions.to_a
 
     {
-      total_sessions: all_sessions.count,
+      total_sessions: sessions.count,
       average_score: (sessions.average(:score_percentage) || 0).to_f.round(2),
       recent_sessions_count: recent_sessions.count,
       recent_average_score: (recent_sessions.average(:score_percentage) || 0).to_f.round(2),
       weekly_sessions_count: weekly_sessions.count,
       weekly_average_score: (weekly_sessions.average(:score_percentage) || 0).to_f.round(2),
-      total_questions_answered: all_sessions.sum(&:total_questions),
-      total_correct: all_sessions.sum(&:correct_count),
+      total_questions_answered: sessions.sum { |s| s.total_questions },
+      total_correct: sessions.sum { |s| s.correct_count },
       current_streak: calculate_streak
     }
   end

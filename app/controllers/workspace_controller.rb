@@ -1,8 +1,7 @@
 # frozen_string_literal: true
 
-class WorkspaceController < ApplicationController
+class WorkspaceController < AuthenticatedController
   before_action :authenticate_user!, except: [:show]
-  after_action :verify_authorized
 
   def show
     authorize :workspace, :show?

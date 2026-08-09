@@ -26,6 +26,18 @@ import { workspaceLightTheme } from "./theme";
 import { ThemeProviderWrapper } from "../context/ThemeContext";
 import type { ComponentType } from "react";
 
+// ── HTML Sanitization ────────────────────────────────────────────────────────
+function sanitizeHtml(html: string): string {
+  return html
+    .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, "")
+    .replace(/<iframe\b[^<]*(?:(?!<\/iframe>)<[^<]*)*<\/iframe>/gi, "")
+    .replace(/<object\b[^<]*(?:(?!<\/object>)<[^<]*)*<\/object>/gi, "")
+    .replace(/<embed\b[^>]*>/gi, "")
+    .replace(/\s+on\w+\s*=\s*(?:"[^"]*"|'[^']*'|[^\s>]+)/gi, "")
+    .replace(/href\s*=\s*(?:"javascript:[^"]*"|'javascript:[^']*')/gi, 'href="#"')
+    .replace(/src\s*=\s*(?:"javascript:[^"]*"|'javascript:[^']*')/gi, 'src="#"');
+}
+
 // ── Default MUI theme (override in your own ThemeProvider if desired) ─────────
 const defaultTheme = createTheme();
 
@@ -217,7 +229,7 @@ class LazyIslandElement extends HTMLElement {
     const childrenHtml = this.initialInnerHTML ?? null;
     const childNode = childrenHtml
       ? React.createElement("div", {
-          dangerouslySetInnerHTML: { __html: childrenHtml },
+          dangerouslySetInnerHTML: { __html: sanitizeHtml(childrenHtml) },
         })
       : undefined;
 

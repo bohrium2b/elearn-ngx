@@ -34,5 +34,23 @@ FactoryBot.define do
         }
       end
     end
+
+    trait :with_real_static_question do
+      transient do
+        question { nil }
+      end
+
+      spec do
+        q = question || create(:question)
+        {
+          "selection_rules" => [
+            {
+              "type" => "static_question",
+              "question_uuid" => q.uuid
+            }
+          ]
+        }
+      end
+    end
   end
 end

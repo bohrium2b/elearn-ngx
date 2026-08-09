@@ -1,9 +1,9 @@
 # frozen_string_literal: true
 
-class TagController < ApplicationController
-  before_action :authenticate_user!, except: %i[index show]
+class TagController < AuthenticatedController
+  skip_before_action :authenticate_user!, only: %i[index show]
+  skip_after_action :verify_authorized, only: :index
   before_action :set_tag, only: %i[show edit update destroy]
-  after_action :verify_authorized, except: :index
 
   def index
     root_tags = Tag.where(parent_id: nil).includes(:children, :questions)
@@ -76,20 +76,8 @@ class TagController < ApplicationController
   private
 
   def set_tag
-    @tag = find_tag_by_param(params[:id])
-  end
-
-  def find_tag_by_param(param)
-    key = param.to_s
-    tag = if key.length >= 36
-            uuid = key[0..35]
-            Tag.find_by(uuid: uuid)
-          else
-            Tag.find_by(slug: key) || Tag.find_by(id: key)
-          end
-    raise ActiveRecord::RecordNotFound, "Tag not found" unless tag
-
-    tag
+    @tag = Tag.find_by_param(params[:id])
+    raise ActiveRecord::RecordNotFound, "Tag not found" unless @tag
   end
 
   def tag_params(for_create:, current_tag: nil)

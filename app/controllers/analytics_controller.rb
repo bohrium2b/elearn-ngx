@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
-class AnalyticsController < ApplicationController
-  before_action :authenticate_user!
+class AnalyticsController < AuthenticatedController
+  skip_after_action :verify_authorized
 
   def index
     redirect_to dashboard_analytics_path
@@ -149,8 +149,11 @@ class AnalyticsController < ApplicationController
   end
 
   def enrich_question_responses(question_responses)
+    question_uuids = question_responses.filter_map { |qr| qr["question_uuid"] }
+    questions = Question.where(uuid: question_uuids).index_by(&:uuid)
+
     question_responses.map do |qr|
-      question = Question.find_by(uuid: qr["question_uuid"])
+      question = questions[qr["question_uuid"]]
       next qr unless question
 
       config = question.config_data || {}

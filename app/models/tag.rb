@@ -1,6 +1,8 @@
 # frozen_string_literal: true
 
 class Tag < ApplicationRecord
+  include FindByParamable
+
   before_validation :ensure_uuid, on: :create
   before_validation :generate_slug, :assign_random_color, on: :create
   before_destroy :detach_questions

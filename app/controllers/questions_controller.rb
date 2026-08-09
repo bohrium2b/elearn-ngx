@@ -1,20 +1,20 @@
 # frozen_string_literal: true
 
-class QuestionsController < ApplicationController
-  before_action :authenticate_user!, except: %i[index show]
+class QuestionsController < AuthenticatedController
+  skip_before_action :authenticate_user!, only: %i[index show]
+  skip_after_action :verify_authorized, only: :index
   before_action :set_question, only: %i[show edit update destroy]
-  after_action :verify_authorized, except: :index
 
   def index
     @questions = Question.all
-    render json: @questions.map { |question| serialize_question(question) }
+    render json: @questions.map { |question| question_payload(question) }
   end
 
   def show
     authorize @question
     respond_to do |format|
       format.html { render :show }
-      format.json { render json: serialize_question(@question) }
+      format.json { render json: question_payload(@question) }
     end
   end
 
@@ -39,8 +39,10 @@ class QuestionsController < ApplicationController
       return render_question_validation_error(validation_error, :new)
     end
 
+    @question.config_data = question_config
+    @question.slug = payload.fetch(:slug, "")
+
     if @question.save
-      @question.update(config_data: question_config, slug: payload.fetch(:slug, ""))
       handle_create_response
     else
       render :new, status: :unprocessable_content
@@ -75,17 +77,7 @@ class QuestionsController < ApplicationController
   private
 
   def set_question
-    @question = find_question_by_param(params[:id])
-  end
-
-  def find_question_by_param(param)
-    key = param.to_s
-    if key.length >= 36
-      uuid_candidate = key[0, 36]
-      q = Question.find_by(uuid: uuid_candidate)
-      return q if q
-    end
-    Question.find_by(uuid: key) || Question.find_by(slug: key) || Question.find(key)
+    @question = Question.find_by_param(params[:id])
   end
 
   def question_params
@@ -148,7 +140,7 @@ class QuestionsController < ApplicationController
   def handle_update_response
     if request.content_type&.include?("application/json")
       if request.headers["X-Inline-Edit"] == "true"
-        render json: { question: serialize_question(@question) }, status: :ok
+        render json: { question: question_payload(@question) }, status: :ok
       else
         render json: { redirected: true, url: question_url(@question) }, status: :ok
       end
@@ -174,7 +166,7 @@ class QuestionsController < ApplicationController
     end
   end
 
-  def serialize_question(question)
+  def question_payload(question)
     config_data = question.config_data || {}
     {
       id: question.id,

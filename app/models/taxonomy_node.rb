@@ -50,7 +50,6 @@ class TaxonomyNode < ApplicationRecord
     visited = Set.new([id])
     while node.parent
       node = node.parent
-      # Prevent infinite loop on circular references
       break if visited.include?(node.id)
 
       visited.add(node.id)

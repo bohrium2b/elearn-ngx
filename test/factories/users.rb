@@ -34,5 +34,16 @@ FactoryBot.define do
         user.add_role(:admin)
       end
     end
+
+    trait :with_multiple_roles do
+      transient do
+        role_names { %w[content_author instructor] }
+      end
+
+      after(:create) do |user, evaluator|
+        user.roles.clear
+        evaluator.role_names.each { |role| user.add_role(role) }
+      end
+    end
   end
 end

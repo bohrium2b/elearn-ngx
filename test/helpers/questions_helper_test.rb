@@ -19,7 +19,7 @@ class QuestionsHelperTest < ActionView::TestCase
   test "render_quiz_island includes question data" do
     question = create(:question, question_id_code: "Q-100", config_data: {
                         question: "What is 2+2?",
-                        choices: [{ content: "4", correct: true }],
+                        choices: [{ content: "4", correct: true }, { content: "3", correct: false }],
                         hints: ["Count"],
                         numChoices: 1
                       })

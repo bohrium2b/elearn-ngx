@@ -9,6 +9,8 @@ class TopicTagsControllerTest < ActionDispatch::IntegrationTest
     @unit = TaxonomyNode.create!(name: "Test Unit", level: :unit, parent: @part, course: @course)
     @topic = TaxonomyNode.create!(name: "Test Topic", level: :topic, parent: @unit, course: @course)
     @tag = create(:tag, name: "Test Tag")
+    @user = create(:user, :content_author)
+    sign_in @user
   end
 
   test "should get index" do

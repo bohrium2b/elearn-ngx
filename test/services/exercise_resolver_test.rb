@@ -208,7 +208,7 @@ class ExerciseResolverTest < ActiveSupport::TestCase
   test "resolve returns questions in correct format" do
     question = create(:question, config_data: {
                         question: "What is 2+2?",
-                        choices: [{ content: "4", correct: true }],
+                        choices: [{ content: "4", correct: true }, { content: "3", correct: false }],
                         hints: ["Count"],
                         numChoices: 1,
                         type: "multi-choice"

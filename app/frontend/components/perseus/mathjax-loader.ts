@@ -44,38 +44,35 @@ interface MathJaxStartupBundle {
 let startupMathJax: MathJaxStartupBundle | null = null;
 
 async function init(): Promise<void> {
-  if (initialized) return;
+  console.log("Initializing MathJax...");
+  if (initialized) {
+    console.log("MathJax already initialized.");
+    return;
+  }
 
-  // 1) Prefer an already-loaded global MathJax startup bundle (v4).
   const globalMathJax = (
     globalThis as unknown as { MathJax?: MathJaxStartupBundle }
   ).MathJax;
+
   if (globalMathJax?.startup) {
     startupMathJax = globalMathJax;
     if (startupMathJax.startup?.promise) {
       await startupMathJax.startup.promise;
     }
-    initialized = true;
-    return;
-  }
-
-  // 2) Try to load a v4 combined bundle if available (e.g. @mathjax/src).
-  try {
-    // This dynamic import may fail if the bundle/package isn't installed.
-    await import("@mathjax/src/bundle/tex-svg.js");
-    startupMathJax =
-      (globalThis as unknown as { MathJax?: MathJaxStartupBundle }).MathJax ??
-      null;
-    if (startupMathJax?.startup?.promise) {
-      await startupMathJax.startup.promise;
+  } else {
+    try {
+      await import("@mathjax/src/bundle/tex-svg.js");
+      startupMathJax =
+        (globalThis as unknown as { MathJax?: MathJaxStartupBundle }).MathJax ??
+        null;
+      if (startupMathJax?.startup?.promise) {
+        await startupMathJax.startup.promise;
+      }
+    } catch {
+      console.log("Failed to load MathJax v4 bundle");
     }
-    initialized = true;
-    return;
-  } catch {
-    // Fall through to module-based initialization below.
   }
 
-  // 3) Fall back to the module-based initialization (mathjax v3/v4 module layout).
   adaptor = liteAdaptor();
   RegisterHTMLHandler(adaptor);
 
@@ -97,18 +94,35 @@ function stripTags(html: string): string {
     .trim();
 }
 
+const MATHJAX_RENDER_TIMEOUT_MS = 10;
+
 export async function renderTexToSvg(
   texSource: string,
 ): Promise<{ svg: string; accessibleText: string }> {
   await init();
-  // If a startup bundle (v4) is available, use its promise-based API
-  // and startup adaptor to produce a clean serialized SVG.
-  let accessibleText = texSource; // Fallback accessible text is the raw TeX source.
+  console.log("Loc A: Rendering TeX to SVG inside mathjax-loader:", texSource);
+  let accessibleText = texSource;
+  console.log("Loc B: Generated accessible text (fallback):", accessibleText);
   if (startupMathJax?.tex2svgPromise) {
+    console.log("Loc C: Using startup bundle for TeX rendering.");
     try {
-      const node = await startupMathJax.tex2svgPromise(texSource, {
-        display: false,
-      });
+      const node = await Promise.race([
+        startupMathJax.tex2svgPromise(texSource, {
+          display: false,
+        }),
+        new Promise<never>((_, reject) =>
+          setTimeout(
+            () =>
+              reject(
+                new Error(
+                  `MathJax tex2svgPromise timed out after ${MATHJAX_RENDER_TIMEOUT_MS}ms`,
+                ),
+              ),
+            MATHJAX_RENDER_TIMEOUT_MS,
+          ),
+        ),
+      ]);
+      console.log("Loc D: Generated node (startup bundle):", node);
       const startupAdaptor = startupMathJax.startup?.adaptor;
       if (startupAdaptor) {
         // Prefer adaptor.innerHTML to capture the entire serialized output
@@ -163,15 +177,25 @@ export async function renderTexToSvg(
           }
         }
 
-        console.log("Generated SVG (startup bundle):", svg);
+        console.log("Loc D1: Generated SVG (startup bundle):", svg);
+        console.log(
+          "Generated accessible text (startup bundle):",
+          accessibleText,
+        );
         return { svg, accessibleText };
       }
+      console.log("Failed to generate node (startup bundle).");
     } catch (err) {
+      console.log("Error occurred while rendering TeX with startup bundle.");
       console.error("MathJax startup render error:", err);
       // Fall through to module-based rendering.
     }
+    console.log("Loc E: Failed to use startup bundle for TeX rendering.");
   }
 
+  console.log(
+    "Using module-based rendering for TeX - failed to use startup bundle",
+  );
   // Module-based fallback (mathjax-full / component API).
   if (svgDoc && adaptor) {
     const svgNode = svgDoc.convert(texSource, { display: false });

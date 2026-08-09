@@ -1,5 +1,4 @@
 import { default as ReactMarkdown } from "react-markdown";
-// We pre-render TeX to SVG before passing to ReactMarkdown.
 import remarkGfm from "remark-gfm";
 import remarkGemoji from "remark-gemoji";
 import rehypeHighlight from "rehype-highlight";
@@ -8,7 +7,7 @@ import TeX from "./TeX";
 import "primer-markdown/build/build.css";
 import "@fontsource/noto-serif/index.css";
 import "@fontsource/inter/index.css";
-import "highlight.js/styles/github.css"; // Import a highlight.js theme
+import "highlight.js/styles/github.css";
 import React, { useRef, useState, useEffect, memo } from "react";
 
 export interface MarkdownProps {
@@ -25,11 +24,11 @@ const Markdown: React.FC<MarkdownProps> = memo(({ children, fontFamily }) => {
 
     function escapeHtml(s: string) {
       return s
-        .replace(/&/g, "&")
-        .replace(/</g, "<")
-        .replace(/>/g, ">")
-        .replace(/"/g, "")
-        .replace(/'/g, "'");
+        .replace(/&/g, String.fromCharCode(38) + "#" + "amp;")
+        .replace(/</g, String.fromCharCode(38) + "#" + "lt;")
+        .replace(/>/g, String.fromCharCode(38) + "#" + "gt;")
+        .replace(/"/g, String.fromCharCode(38) + "#" + "quot;")
+        .replace(/'/g, String.fromCharCode(38) + "#" + "#x27;");
     }
 
     function processMath(input: string) {
@@ -80,9 +79,6 @@ const Markdown: React.FC<MarkdownProps> = memo(({ children, fontFamily }) => {
       ref={containerRef}
     >
       <ReactMarkdown
-        // We pre-render math into raw HTML above. Allow injected HTML
-        // via `rehypeRaw` and keep highlighting. Map placeholder tags
-        // to the `TeX` component so math is rendered as a React node.
         remarkPlugins={[remarkGfm, remarkGemoji]}
         rehypePlugins={[rehypeRaw, rehypeHighlight]}
         components={

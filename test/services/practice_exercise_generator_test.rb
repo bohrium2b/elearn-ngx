@@ -208,7 +208,7 @@ class PracticeExerciseGeneratorTest < ActiveSupport::TestCase
   test "generate returns questions in correct format" do
     question = create(:question, config_data: {
                         "question" => "What is 2+2?",
-                        "choices" => [{ "content" => "4", "correct" => true }],
+                        "choices" => [{ "content" => "4", "correct" => true }, { "content" => "3", "correct" => false }],
                         "hints" => ["Count"],
                         "numChoices" => 1,
                         "type" => "multi-choice"
@@ -220,7 +220,7 @@ class PracticeExerciseGeneratorTest < ActiveSupport::TestCase
     q = result[:questions].first
     assert_equal question.uuid, q[:uuid]
     assert_equal "What is 2+2?", q[:content]
-    assert_equal [{ "content" => "4", "correct" => true }], q[:options]
+    assert_equal [{ "content" => "4", "correct" => true }, { "content" => "3", "correct" => false }], q[:options]
     assert_equal ["Count"], q[:hints]
     assert_equal 1, q[:numChoices]
     assert_equal "multi-choice", q[:type]

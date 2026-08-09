@@ -17,12 +17,13 @@ module IslandsHelper
   def react_island_tag(name, props = {})
     raise ArgumentError, "Island name must contain a hyphen (Custom Elements spec)" unless name.include?("-")
 
-    # Sanitize: convert to JSON, then HTML-escape to prevent XSS when the
-    # attribute is read back by the browser.
     serialized_props = props.to_json
 
-    # Build the tag manually to preserve JSON format in the attribute
-    # The browser will parse the JSON from the data-props attribute
-    "<#{name} data-props=\"#{serialized_props}\"></#{name}>".html_safe # rubocop:disable Rails/OutputSafety
+    # Build the tag manually to preserve JSON format in the attribute.
+    # JSON string values contain double quotes, which would break an HTML
+    # attribute delimited by double quotes. HTML-escape the JSON so the
+    # browser can safely store it in data-props and the island bootstrapper
+    # can JSON.parse() it after the browser decodes the attribute value.
+    "<#{name} data-props=\"#{ERB::Util.html_escape(serialized_props)}\"></#{name}>".html_safe # rubocop:disable Rails/OutputSafety
   end
 end

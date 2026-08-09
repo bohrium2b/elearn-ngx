@@ -162,7 +162,6 @@ export const PerseusRenderer = forwardRef<
     if (!userInput) {
       return null;
     }
-    // @ts-expect-error - TS2345 - Type incompatibility between perseus-core and perseus-score packages
     const rawScore = scorePerseusItem(item.question, userInput, "en");
     if (!rawScore) {
       return null;

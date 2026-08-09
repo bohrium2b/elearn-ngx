@@ -1,12 +1,12 @@
 # frozen_string_literal: true
 
 module Api
-  class AssessmentSessionsController < ApplicationController
-    before_action :authenticate_user!
+  class AssessmentSessionsController < AuthenticatedController
 
     rescue_from Pundit::NotAuthorizedError, with: :user_not_authorized_api
 
     def index
+      authorize AssessmentSession
       @sessions = policy_scope(AssessmentSession).recent
       @sessions = @sessions.for_exercise(Exercise.find(params[:exercise_id])) if params[:exercise_id]
 
@@ -23,6 +23,7 @@ module Api
     end
 
     def create
+      authorize AssessmentSession
       result = TelemetryProcessor.new(permitted_params, current_user).process
       log_create_result(result)
       return render json: { errors: result[:errors] }, status: :unprocessable_content unless result[:success]

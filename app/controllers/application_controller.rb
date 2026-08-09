@@ -8,6 +8,7 @@ class ApplicationController < ActionController::Base
 
   protect_from_forgery with: :exception
 
+  before_action :set_security_headers
   before_action :configure_permitted_parameters, if: :devise_controller?
   before_action :store_user_location!, if: :storable_location?
 
@@ -34,15 +35,14 @@ class ApplicationController < ActionController::Base
   end
 
   def after_sign_in_path_for(resource_or_scope)
-    stored_location_for(resource_or_scope) || root_path
+    stored_location_for(:resource_or_scope) || root_path
   end
 
-  # Prevent role assignment via parameters
-  def devise_parameter_sanitizer
-    if resource_class == User
-      User::ParameterSanitizer.new(User, :user, params)
-    else
-      super
-    end
+  def set_security_headers
+    response.set_header("X-Content-Type-Options", "nosniff")
+    response.set_header("X-Frame-Options", "DENY")
+    response.set_header("X-XSS-Protection", "1; mode=block")
+    response.set_header("Referrer-Policy", "strict-origin-when-cross-origin")
+    response.set_header("Permissions-Policy", "geolocation=(), microphone=(), camera=()")
   end
 end
