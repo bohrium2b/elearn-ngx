@@ -45,6 +45,7 @@ config/credentials.yml.enc
 !/app/assets/builds/.keep
 
 .plans/*
+.kilo/*
 
 # Coverage
 coverage/*
