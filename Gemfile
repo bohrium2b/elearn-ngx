@@ -23,7 +23,7 @@ gem "turbo-rails"
 # gem "redis", ">= 4.0.1"
 
 # ── Authentication & Authorization ───────────────────────────────────────────
-gem "devise", "~> 4.9"
+gem "devise", "~> 5.0"
 gem "pundit", "~> 2.3"
 gem "rolify", "~> 6.0"
 
