@@ -88,6 +88,7 @@ module Api
     def permitted_params
       params.permit(
         :exercise_uuid,
+        :topic_id,
         :duration_seconds,
         :completed_at,
         session_metadata: {},

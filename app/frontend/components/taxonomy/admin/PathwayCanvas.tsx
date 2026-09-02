@@ -23,7 +23,8 @@ import {
   ExpandLess,
 } from '@mui/icons-material';
 import { Course, Part, Unit, Topic, TaxonomyNode } from '../types';
-import { adminTaxonomyApi } from '../api';
+import { adminTaxonomyApi, contentAssignmentApi } from '../api';
+import { getCsrfToken } from "../lib/getCsrfToken";
 import useToast from '../useToast';
 
 interface PathwayCanvasProps {
@@ -198,25 +199,10 @@ export const PathwayCanvas: React.FC<PathwayCanvasProps> = ({
 
         if (topic && course) {
           // Create content assignment
-          const response = await fetch('/content_assignments', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'X-CSRF-Token': (document.querySelector('meta[name="csrf-token"]') as HTMLMetaElement)?.content || '',
-            },
-            body: JSON.stringify({
-              content_assignment: {
-                taxonomy_node_id: topic.id,
-                question_id: item.id
-              }
-            })
+          await contentAssignmentApi.create({
+            taxonomy_node_id: topic.id,
+            question_id: item.id
           });
-          
-          if (!response.ok) {
-            const errorData = await response.json().catch(() => ({}));
-            const errorMsg = errorData.errors?.join(', ') || errorData.message || 'Failed to add question';
-            throw new Error(errorMsg);
-          }
           
           success('Question added to topic');
           onCourseUpdate();
@@ -231,22 +217,14 @@ export const PathwayCanvas: React.FC<PathwayCanvasProps> = ({
         if (topic && course && item.questions) {
           let successCount = 0;
           for (const question of item.questions) {
-            const response = await fetch('/content_assignments', {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-                'X-CSRF-Token': (document.querySelector('meta[name="csrf-token"]') as HTMLMetaElement)?.content || '',
-              },
-              body: JSON.stringify({
-                content_assignment: {
-                  taxonomy_node_id: topic.id,
-                  question_id: question.id
-                }
-              })
-            });
-            
-            if (response.ok) {
+            try {
+              await contentAssignmentApi.create({
+                taxonomy_node_id: topic.id,
+                question_id: question.id
+              });
               successCount++;
+            } catch (err) {
+              console.error('Failed to add question to topic:', err);
             }
           }
           

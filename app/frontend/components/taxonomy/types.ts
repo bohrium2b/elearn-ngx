@@ -124,6 +124,7 @@ export interface AllResources {
 export interface UserProgress {
   total_topics: number;
   completed_topics: number;
+  completed_topic_ids: number[];
   percentage: number;
 }
 

@@ -45,6 +45,6 @@ export async function apiRequest<T>(
   try {
     return await response.json();
   } catch {
-    return undefined as T;
+    return null;
   }
 }

@@ -25,24 +25,40 @@ class LearningPathwaysController < AuthenticatedController
   end
 
   def start_topic
+    # rubocop:disable Rails/DynamicFindBy
     topic = TaxonomyNode.find_by_param(params[:topic_id])
+    # rubocop:enable Rails/DynamicFindBy
     return render json: { error: "Topic not found" }, status: :not_found unless topic
 
     render json: { status: "started", topic_id: topic.id }
   end
 
   def complete_topic
+    # rubocop:disable Rails/DynamicFindBy
     topic = TaxonomyNode.find_by_param(params[:topic_id])
+    # rubocop:enable Rails/DynamicFindBy
     return render json: { error: "Topic not found" }, status: :not_found unless topic
 
-    render json: { status: "completed", topic_id: topic.id }
+    qualifying_session = current_user.assessment_sessions
+                                     .where(taxonomy_node_id: topic.id)
+                                     .where(score_percentage: 70..)
+                                     .order(completed_at: :desc)
+                                     .first
+
+    if qualifying_session
+      render json: { status: "completed", topic_id: topic.id, score_percentage: qualifying_session.score_percentage }
+    else
+      render json: { error: "No qualifying session found for this topic" }, status: :not_found
+    end
   end
 
   private
 
   def set_course
+    # rubocop:disable Rails/DynamicFindBy
     @course = TaxonomyNode.courses.find_by_param(params[:id])
-    return render json: { error: "Course not found" }, status: :not_found unless @course
+    # rubocop:enable Rails/DynamicFindBy
+    render json: { error: "Course not found" }, status: :not_found unless @course
   end
 
   def serialize_course_summary(course)
@@ -124,10 +140,21 @@ class LearningPathwaysController < AuthenticatedController
 
   def calculate_user_progress(course)
     topics = course.descendants.select(&:topic?)
+    total_topics = topics.count
+
+    qualifying_topic_ids = current_user.assessment_sessions
+                                       .where.not(taxonomy_node_id: nil)
+                                       .where(score_percentage: 70..)
+                                       .distinct.pluck(:taxonomy_node_id)
+
+    completed_topics = topics.count { |t| qualifying_topic_ids.include?(t.id) }
+    percentage = total_topics.positive? ? ((completed_topics.to_f / total_topics) * 100).round : 0
+
     {
-      total_topics: topics.count,
-      completed_topics: 0,
-      percentage: 0
+      total_topics: total_topics,
+      completed_topics: completed_topics,
+      completed_topic_ids: qualifying_topic_ids,
+      percentage: percentage
     }
   end
 end

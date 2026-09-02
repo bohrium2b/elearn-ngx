@@ -8,7 +8,7 @@
  * Props: { courseId: string }
  */
 
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useMemo } from "react";
 import {
   Box,
   Typography,
@@ -36,6 +36,11 @@ import {
 } from "@mui/icons-material";
 import { Course, Topic, UserProgress } from "./types";
 import { learningPathwaysApi } from "./api";
+
+interface GamificationStatus {
+  streak: number;
+  hearts: number;
+}
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
@@ -292,9 +297,11 @@ const TopicNode: React.FC<TopicNodeProps> = ({
 
 // ── Gamification Header ───────────────────────────────────────────────────────
 
-const GamificationHeader: React.FC<{ progress: UserProgress | null }> = ({
-  progress: _progress,
-}) => (
+const GamificationHeader: React.FC<{
+  progress: UserProgress | null;
+  streak: number;
+  hearts: number;
+}> = ({ progress: _progress, streak, hearts }) => (
   <Paper
     sx={{
       p: 2,
@@ -318,7 +325,7 @@ const GamificationHeader: React.FC<{ progress: UserProgress | null }> = ({
           <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
             <LocalFireDepartment sx={{ color: "#ff9800" }} />
             <Typography variant="h6" sx={{ fontSize: { xs: "1rem", sm: "1.25rem" } }}>
-              12
+              {streak}
             </Typography>
             <Typography
               variant="caption"
@@ -330,7 +337,7 @@ const GamificationHeader: React.FC<{ progress: UserProgress | null }> = ({
           <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
             <EmojiEvents sx={{ color: "#ffd700" }} />
             <Typography variant="h6" sx={{ fontSize: { xs: "1rem", sm: "1.25rem" } }}>
-              508
+              0
             </Typography>
             <Typography
               variant="caption"
@@ -342,7 +349,7 @@ const GamificationHeader: React.FC<{ progress: UserProgress | null }> = ({
           <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
             <Favorite sx={{ color: "#e91e63" }} />
             <Typography variant="h6" sx={{ fontSize: { xs: "1rem", sm: "1.25rem" } }}>
-              5
+              {hearts}
             </Typography>
             <Typography
               variant="caption"
@@ -367,6 +374,7 @@ const GamificationHeader: React.FC<{ progress: UserProgress | null }> = ({
 export const LinearPathway: React.FC<LinearPathwayProps> = ({ courseId }) => {
   const [course, setCourse] = useState<Course | null>(null);
   const [progress, setProgress] = useState<UserProgress | null>(null);
+  const [gamification, setGamification] = useState<GamificationStatus>({ streak: 0, hearts: 5 });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -374,12 +382,21 @@ export const LinearPathway: React.FC<LinearPathwayProps> = ({ courseId }) => {
     setLoading(true);
     setError(null);
     try {
-      const [courseData, progressData] = await Promise.all([
+      const [courseData, progressData, gamificationData] = await Promise.all([
         learningPathwaysApi.getCourse(courseId),
         learningPathwaysApi.getProgress(courseId),
+        fetch("/api/gamification/status", {
+          headers: { Accept: "application/json" },
+        })
+          .then((res) => (res.ok ? res.json() : { streak: 0, hearts: 5 }))
+          .catch(() => ({ streak: 0, hearts: 5 })),
       ]);
       setCourse(courseData);
       setProgress(progressData);
+      setGamification({
+        streak: gamificationData?.streak || 0,
+        hearts: gamificationData?.hearts || 5,
+      });
     } catch (err) {
       console.error("Failed to load course:", err);
       setError("Failed to load course. Please try again.");
@@ -395,7 +412,7 @@ export const LinearPathway: React.FC<LinearPathwayProps> = ({ courseId }) => {
   const handleStartTopic = async (topic: Topic) => {
     try {
       await learningPathwaysApi.startTopic(courseId, topic.path_identifier);
-      window.location.href = `/taxonomy/${topic.path_identifier}`;
+      window.location.href = `/taxonomy/${topic.path_identifier}/play`;
     } catch (err) {
       console.error("Failed to start topic:", err);
     }
@@ -403,13 +420,26 @@ export const LinearPathway: React.FC<LinearPathwayProps> = ({ courseId }) => {
 
   const getTopicStatus = (
     topic: Topic,
-    globalIndex: number
+    completedIds: number[],
+    activeTopicId: number | null
   ): "completed" | "active" | "locked" => {
-    if (!progress) return "locked";
-    if (globalIndex < progress.completed_topics) return "completed";
-    if (globalIndex === progress.completed_topics) return "active";
+    if (completedIds.includes(topic.id)) return "completed";
+    if (topic.id === activeTopicId) return "active";
     return "locked";
   };
+
+  const activeTopicId = useMemo(() => {
+    if (!progress || !course) return null;
+    const completedIds = new Set(progress.completed_topic_ids || []);
+    for (const part of course.parts ?? []) {
+      for (const unit of part.units ?? []) {
+        for (const topic of unit.topics ?? []) {
+          if (!completedIds.has(topic.id)) return topic.id;
+        }
+      }
+    }
+    return null;
+  }, [progress, course]);
 
   // ── Loading State ──────────────────────────────────────────────────────────
 
@@ -504,7 +534,11 @@ export const LinearPathway: React.FC<LinearPathwayProps> = ({ courseId }) => {
   return (
     <Box sx={{ bgcolor: "grey.50", minHeight: "100vh", pb: 8 }}>
       {/* Gamification Header */}
-      <GamificationHeader progress={progress} />
+      <GamificationHeader
+        progress={progress}
+        streak={gamification.streak}
+        hearts={gamification.hearts}
+      />
 
       <Container maxWidth="md">
         {/* Course Header */}
@@ -577,7 +611,7 @@ export const LinearPathway: React.FC<LinearPathwayProps> = ({ courseId }) => {
                 <TopicNode
                   key={item.topic.id}
                   topic={item.topic}
-                  status={getTopicStatus(item.topic, item.globalIndex)}
+                  status={getTopicStatus(item.topic, progress?.completed_topic_ids || [], activeTopicId)}
                   index={topicIndex}
                   unitName={unitData.unit.name}
                   onStart={() => handleStartTopic(item.topic)}

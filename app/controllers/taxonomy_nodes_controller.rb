@@ -3,7 +3,7 @@
 class TaxonomyNodesController < AuthenticatedController
   skip_before_action :authenticate_user!
   skip_after_action :verify_authorized
-  before_action :set_taxonomy_node, only: %i[show update destroy descendants ancestors questions all_resources]
+  before_action :set_taxonomy_node, only: %i[show update destroy descendants ancestors questions all_resources play]
 
   def index
     @nodes = TaxonomyNode.roots.ordered.includes(:children)
@@ -48,6 +48,18 @@ class TaxonomyNodesController < AuthenticatedController
   def questions
     @questions = @taxonomy_node.questions.includes(:tags)
     render json: @questions.map { |q| serialize_question(q) }
+  end
+
+  def play
+    return render json: { error: "Topic not found" }, status: :not_found unless @taxonomy_node&.topic?
+
+    exercise = TopicExerciseBuilder.new(@taxonomy_node).build_exercise
+    resolved = ExerciseResolver.new(exercise.spec).resolve
+
+    respond_to do |format|
+      format.html
+      format.json { render json: { topic: serialize_play_topic(@taxonomy_node), questions: resolved, exercise_uuid: exercise.uuid } }
+    end
   end
 
   def all_resources
@@ -183,6 +195,18 @@ class TaxonomyNodesController < AuthenticatedController
       uuid: exercise.uuid,
       path_identifier: exercise.path_identifier,
       spec: exercise.spec
+    }
+  end
+
+  def serialize_play_topic(node)
+    {
+      id: node.id,
+      uuid: node.uuid,
+      slug: node.slug,
+      path_identifier: node.path_identifier,
+      name: node.name,
+      description: node.description,
+      course_id: node.course_id
     }
   end
 end

@@ -15,106 +15,59 @@ import {
   AllResources,
   Question,
 } from "./types";
-import { showToast } from "./useToast";
+import { apiRequest } from "@/lib/apiClient";
 
 const API_BASE = "/taxonomy";
 const ADMIN_API_BASE = "/admin/taxonomy_nodes";
 const LEARNING_PATHWAYS_BASE = "/learning_pathways";
 
-async function fetchJson<T>(url: string, options?: RequestInit): Promise<T> {
-  const response = await fetch(url, {
-    headers: {
-      "Content-Type": "application/json",
-      Accept: "application/json",
-      "X-CSRF-Token":
-        (document.querySelector('meta[name="csrf-token"]') as HTMLMetaElement)
-          ?.content || "",
-      ...options?.headers,
-    },
-    ...options,
-  });
-
-  if (!response.ok) {
-    let errorMessage = `API error: ${response.status}`;
-    try {
-      const errorData = await response.json();
-      if (errorData.errors) {
-        errorMessage = Array.isArray(errorData.errors)
-          ? errorData.errors.join(", ")
-          : errorData.errors;
-      } else if (errorData.message) {
-        errorMessage = errorData.message;
-      } else if (errorData.error) {
-        errorMessage = errorData.error;
-      }
-    } catch {
-      // If we can't parse the error response, use the status text
-      errorMessage = `API error: ${response.status} ${response.statusText}`;
-    }
-
-    // Show toast notification for the error
-    showToast(errorMessage, "error");
-
-    throw new Error(errorMessage);
-  }
-
-  return response.json();
-}
-
 export const taxonomyApi = {
   // Get all root nodes (courses)
-  getCourses: () => fetchJson<TaxonomyNode[]>(API_BASE),
+  getCourses: () => apiRequest<TaxonomyNode[]>(API_BASE),
 
   // Get full tree structure
-  getTree: () => fetchJson<Course[]>(`${API_BASE}/tree`),
+  getTree: () => apiRequest<Course[]>(`${API_BASE}/tree`),
 
   // Get single node
-  getNode: (id: string) => fetchJson<TaxonomyNode>(`${API_BASE}/${id}`),
+  getNode: (id: string) => apiRequest<TaxonomyNode>(`${API_BASE}/${id}`),
 
   // Get descendants
   getDescendants: (id: string) =>
-    fetchJson<TaxonomyNode[]>(`${API_BASE}/${id}/descendants`),
+    apiRequest<TaxonomyNode[]>(`${API_BASE}/${id}/descendants`),
 
   // Get ancestors
   getAncestors: (id: string) =>
-    fetchJson<TaxonomyNode[]>(`${API_BASE}/${id}/ancestors`),
+    apiRequest<TaxonomyNode[]>(`${API_BASE}/${id}/ancestors`),
 
   // Get questions for a node
   getQuestions: (id: string) =>
-    fetchJson<Question[]>(`${API_BASE}/${id}/questions`),
+    apiRequest<Question[]>(`${API_BASE}/${id}/questions`),
 
   // Create node
   createNode: (data: Partial<TaxonomyNode>) =>
-    fetchJson<TaxonomyNode>(API_BASE, {
+    apiRequest<TaxonomyNode>(API_BASE, {
       method: "POST",
       body: JSON.stringify({ taxonomy_node: data }),
     }),
 
   // Update node
   updateNode: (id: string, data: Partial<TaxonomyNode>) =>
-    fetchJson<TaxonomyNode>(`${API_BASE}/${id}`, {
+    apiRequest<TaxonomyNode>(`${API_BASE}/${id}`, {
       method: "PATCH",
       body: JSON.stringify({ taxonomy_node: data }),
     }),
 
   // Delete node
   deleteNode: (id: string) =>
-    fetch(`${API_BASE}/${id}`, {
-      method: "DELETE",
-      headers: {
-        "X-CSRF-Token":
-          (document.querySelector('meta[name="csrf-token"]') as HTMLMetaElement)
-            ?.content || "",
-      },
-    }),
+    apiRequest(`${API_BASE}/${id}`, { method: "DELETE" }),
 
   // Get nodes by level
   getByLevel: (level: string) =>
-    fetchJson<TaxonomyNode[]>(`${API_BASE}/by_level?level=${level}`),
+    apiRequest<TaxonomyNode[]>(`${API_BASE}/by_level?level=${level}`),
 
   // Get all resources for a topic (tags, questions, exercises)
   getAllResources: (nodeId: string) =>
-    fetchJson<AllResources>(`${API_BASE}/${nodeId}/all_resources`),
+    apiRequest<AllResources>(`${API_BASE}/${nodeId}/all_resources`),
 };
 
 export const contentAssignmentApi = {
@@ -124,52 +77,45 @@ export const contentAssignmentApi = {
     question_id: number;
     position?: number;
   }) =>
-    fetchJson<ContentAssignment>("/content_assignments", {
+    apiRequest<ContentAssignment>("/content_assignments", {
       method: "POST",
       body: JSON.stringify({ content_assignment: data }),
     }),
 
   // Update assignment
   update: (id: number, data: Partial<ContentAssignment>) =>
-    fetchJson<ContentAssignment>(`/content_assignments/${id}`, {
+    apiRequest<ContentAssignment>(`/content_assignments/${id}`, {
       method: "PATCH",
       body: JSON.stringify({ content_assignment: data }),
     }),
 
   // Delete assignment
   delete: (id: number) =>
-    fetch(`/content_assignments/${id}`, {
-      method: "DELETE",
-      headers: {
-        "X-CSRF-Token":
-          (document.querySelector('meta[name="csrf-token"]') as HTMLMetaElement)
-            ?.content || "",
-      },
-    }),
+    apiRequest(`/content_assignments/${id}`, { method: "DELETE" }),
 };
 
 export const learningPathwaysApi = {
   // Get all courses
-  getCourses: () => fetchJson<Course[]>(LEARNING_PATHWAYS_BASE),
+  getCourses: () => apiRequest<Course[]>(LEARNING_PATHWAYS_BASE),
 
   // Get course detail
   getCourse: (id: string) =>
-    fetchJson<Course>(`${LEARNING_PATHWAYS_BASE}/${id}`),
+    apiRequest<Course>(`${LEARNING_PATHWAYS_BASE}/${id}`),
 
   // Get user progress
   getProgress: (id: string) =>
-    fetchJson<UserProgress>(`${LEARNING_PATHWAYS_BASE}/${id}/progress`),
+    apiRequest<UserProgress>(`${LEARNING_PATHWAYS_BASE}/${id}/progress`),
 
   // Start topic
   startTopic: (courseId: string, topicId: string) =>
-    fetchJson(`${LEARNING_PATHWAYS_BASE}/${courseId}/start_topic`, {
+    apiRequest(`${LEARNING_PATHWAYS_BASE}/${courseId}/start_topic`, {
       method: "POST",
       body: JSON.stringify({ topic_id: topicId }),
     }),
 
   // Complete topic
   completeTopic: (courseId: string, topicId: string) =>
-    fetchJson(`${LEARNING_PATHWAYS_BASE}/${courseId}/complete_topic`, {
+    apiRequest(`${LEARNING_PATHWAYS_BASE}/${courseId}/complete_topic`, {
       method: "POST",
       body: JSON.stringify({ topic_id: topicId }),
     }),
@@ -177,43 +123,36 @@ export const learningPathwaysApi = {
 
 export const adminTaxonomyApi = {
   // Get full tree
-  getFullTree: () => fetchJson<Course[]>(`${ADMIN_API_BASE}/full_tree`),
+  getFullTree: () => apiRequest<Course[]>(`${ADMIN_API_BASE}/full_tree`),
 
   // Create node
   createNode: (data: Partial<TaxonomyNode>) =>
-    fetchJson<TaxonomyNode>(ADMIN_API_BASE, {
+    apiRequest<TaxonomyNode>(ADMIN_API_BASE, {
       method: "POST",
       body: JSON.stringify({ taxonomy_node: data }),
     }),
 
   // Update node
   updateNode: (id: string, data: Partial<TaxonomyNode>) =>
-    fetchJson<TaxonomyNode>(`${ADMIN_API_BASE}/${id}`, {
+    apiRequest<TaxonomyNode>(`${ADMIN_API_BASE}/${id}`, {
       method: "PATCH",
       body: JSON.stringify({ taxonomy_node: data }),
     }),
 
   // Delete node
   deleteNode: (id: string) =>
-    fetch(`${ADMIN_API_BASE}/${id}`, {
-      method: "DELETE",
-      headers: {
-        "X-CSRF-Token":
-          (document.querySelector('meta[name="csrf-token"]') as HTMLMetaElement)
-            ?.content || "",
-      },
-    }),
+    apiRequest(`${ADMIN_API_BASE}/${id}`, { method: "DELETE" }),
 
   // Reorder node
   reorderNode: (id: string, position: number) =>
-    fetchJson<TaxonomyNode>(`${ADMIN_API_BASE}/${id}/reorder`, {
+    apiRequest<TaxonomyNode>(`${ADMIN_API_BASE}/${id}/reorder`, {
       method: "PATCH",
       body: JSON.stringify({ position }),
     }),
 
   // Move node
   moveNode: (id: string, newParentId: number) =>
-    fetchJson<TaxonomyNode>(`${ADMIN_API_BASE}/${id}/move`, {
+    apiRequest<TaxonomyNode>(`${ADMIN_API_BASE}/${id}/move`, {
       method: "PATCH",
       body: JSON.stringify({ move: { new_parent_id: newParentId } }),
     }),
@@ -223,11 +162,11 @@ export const adminTaxonomyApi = {
 export const topicTagApi = {
   // Get tags for a topic
   getByTopic: (topicId: number) =>
-    fetchJson<Tag[]>(`/topic_tags?taxonomy_node_id=${topicId}`),
+    apiRequest<Tag[]>(`/topic_tags?taxonomy_node_id=${topicId}`),
 
   // Attach tag to topic
   create: (topicId: number, tagId: number) =>
-    fetchJson("/topic_tags", {
+    apiRequest("/topic_tags", {
       method: "POST",
       body: JSON.stringify({
         topic_tag: { taxonomy_node_id: topicId, tag_id: tagId },
@@ -236,18 +175,18 @@ export const topicTagApi = {
 
   // Detach tag from topic
   delete: (topicId: number, tagId: number) =>
-    fetch(`/topic_tags/${tagId}`, { method: "DELETE" }),
+    apiRequest(`/topic_tags/${tagId}`, { method: "DELETE" }),
 };
 
 // Topic Exercises API - for managing exercise associations with topics
 export const topicExerciseApi = {
   // Get exercises for a topic
   getByTopic: (topicId: number) =>
-    fetchJson<Exercise[]>(`/topic_exercises?taxonomy_node_id=${topicId}`),
+    apiRequest<Exercise[]>(`/topic_exercises?taxonomy_node_id=${topicId}`),
 
   // Attach exercise to topic
   create: (topicId: number, exerciseId: number) =>
-    fetchJson("/topic_exercises", {
+    apiRequest("/topic_exercises", {
       method: "POST",
       body: JSON.stringify({
         topic_exercise: { taxonomy_node_id: topicId, exercise_id: exerciseId },
@@ -256,5 +195,5 @@ export const topicExerciseApi = {
 
   // Detach exercise from topic
   delete: (topicId: number, exerciseId: number) =>
-    fetch(`/topic_exercises/${exerciseId}`, { method: "DELETE" }),
+    apiRequest(`/topic_exercises/${exerciseId}`, { method: "DELETE" }),
 };

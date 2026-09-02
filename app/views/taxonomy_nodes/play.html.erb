@@ -1,0 +1,3 @@
+<% content_for :title, "Playing: #{@taxonomy_node.name}" %>
+
+<topic-player data-props="<%= { topicId: @taxonomy_node.uuid, topicName: @taxonomy_node.name }.to_json %>"></topic-player>

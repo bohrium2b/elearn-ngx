@@ -33,6 +33,7 @@ import {
   Label,
 } from "@mui/icons-material";
 import Grid from "@mui/material/Grid";
+import { getCsrfToken } from "../lib/getCsrfToken";
 
 interface TagNode {
   id: number;
@@ -60,13 +61,11 @@ interface QuestionNode {
 interface TaxonomyFolderViewProps {
   treeData: TagNode[];
   untaggedQuestions: QuestionNode[];
-  csrfToken: string;
 }
 
 export const TaxonomyFolderView: React.FC<TaxonomyFolderViewProps> = ({
   treeData,
   untaggedQuestions,
-  csrfToken,
 }) => {
   const [selectedTagUuid, setSelectedTagUuid] = useState<string | null>(
     treeData[0]?.uuid ?? null
@@ -136,7 +135,7 @@ export const TaxonomyFolderView: React.FC<TaxonomyFolderViewProps> = ({
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "X-CSRF-Token": csrfToken,
+          "X-CSRF-Token": getCsrfToken(),
           Accept: "application/json",
         },
         body: JSON.stringify({

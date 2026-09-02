@@ -46,6 +46,7 @@ Rails.application.routes.draw do
   namespace :api do
     patch "classify_question", to: "classify_questions#update"
     resources :assessment_sessions, only: %i[index show create]
+    get "gamification/status", to: "gamification#status"
   end
 
   # Taxonomy Nodes API - allow any character in :id to support UUID-x:slug format
@@ -54,6 +55,7 @@ Rails.application.routes.draw do
       get :descendants
       get :ancestors
       get :questions
+      get :play
     end
     collection do
       get :tree
